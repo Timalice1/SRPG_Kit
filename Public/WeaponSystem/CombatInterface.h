@@ -14,7 +14,7 @@ class UCombatInterface : public UInterface
 /**
  * 
  */
-class INVENTORYANDWEAPONSYSTEM_API ICombatInterface
+class SRPG_KIT_API ICombatInterface
 {
 	GENERATED_BODY()
 

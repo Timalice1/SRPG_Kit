@@ -5,15 +5,6 @@
 #include "Components/TimelineComponent.h"
 #include "FireWeapon.generated.h"
 
-#pragma region TODO
-/*
-	- Add a camera shake effect for recoil
-	- Add a projectiles
-	- Add a aim offset rotation for character mesh to camera aim point
-	- Add a weapon slide sliding
-*/
-#pragma endregion
-
 UENUM(BlueprintType)
 enum EFireMode {
 	EFM_None,
@@ -23,7 +14,7 @@ enum EFireMode {
 };
 
 UCLASS()
-class INVENTORYANDWEAPONSYSTEM_API AFireWeapon : public ABaseWeapon
+class SRPG_KIT_API AFireWeapon : public ABaseWeapon
 {
 	GENERATED_BODY()
 
@@ -41,13 +32,16 @@ protected:
 	float MaxSpread;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon")
 	bool bAllowAutoFire = true;
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon",
+		meta = (ClampMin = 0, ClampMax = 1))
+	float ReboundProbability;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon")
-	TSubclassOf<class ABullet> BulletClass;
+	TSubclassOf<class AProjectile> Projectile;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon")
 	float FireRate;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon")
 	float Strenght;
-	/*This vector needs if weapon mesh is rotating, to determine recoil direction*/
+	/*This vector needs if weapon mesh is rotating, to determine recoil kick back direction*/
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon|Recoil")
 	FVector KickBack_Direction;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon|Recoil")
@@ -57,7 +51,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon|Recoil")
 	double RecoilRecoverInterpSpeed;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon|Recoil")
-	class UCurveVector* RecoilRotation_Curve = nullptr;
+	class UCurveVector* RecoilMeshRotation_Curve = nullptr;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon|Recoil")
 	float RecoilYawMin;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon|Recoil")
@@ -91,11 +85,13 @@ private:
 	FVector DefaultTranslation;
 	/*Uses for storing default weapon mesh rotator value for recoil*/
 	FRotator DefaultRotation;
-	/*Timeline for get recoil rotation vector curve values*/
-	FTimeline RecoilRotaionTimeline;
+	/*Timeline for weapon mesh recoil rotation*/
+	FTimeline RecoilMeshRotaionTimeline;
 	/*Check if weapon is ready to fire new projectile*/
 	bool bReadyToShoot;
 	class UAnimInstance* AnimBP = NULL;
+
+	FRotator controllerRotation_Default = FRotator();
 
 private:
 
@@ -113,11 +109,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	int CurrentAmmo;
-
 	/*Recoil weapon mesh rotation function for timeline*/
 	UFUNCTION()
 	void RotateMesh();
-
 	/*Shoot one projectile*/
 	UFUNCTION()
 	void Fire();
@@ -135,7 +129,7 @@ public:
 	void Tick(float DeltaSeconds) override;
 
 
-	int GetBulletsLeft() const {
+	int GetProjectilesLeft() const {
 		return CurrentAmmo;
 	};
 
@@ -151,24 +145,30 @@ protected:
 
 
 UCLASS()
-class INVENTORYANDWEAPONSYSTEM_API ABullet : public AActor {
+class SRPG_KIT_API AProjectile : public AActor {
 
 	GENERATED_BODY()
 
+private:
+
+	float Rebound = 0;
+
+	float Damage = 10.f;
+
 protected:
 
-	UPROPERTY()
-	USceneComponent* Root;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
-	class UStaticMeshComponent* BulletMesh;
-
-	UPROPERTY()
+	class UStaticMeshComponent* ProjectileMesh;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
 	class UProjectileMovementComponent* ProjectileMovement;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Components")
+	class UParticleSystemComponent* Tracer;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile", meta = (ClampMin = 1.f))
+	float ProjectileDamageMultiplyer;
 
 public:
 
-	ABullet();
+	AProjectile();
 
 	void BeginPlay() override;
 
@@ -182,4 +182,11 @@ public:
 		FVector NormalImpulse,
 		const FHitResult& Hit);
 
+	void SetReboundProbability(float Value) {
+		this->Rebound = Value;
+	}
+
+	void SetDamageAmount(float Amount) {
+		this->Damage = Amount;
+	}
 };

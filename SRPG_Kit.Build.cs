@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class InventoryAndWeaponSystem : ModuleRules
+public class SRPG_Kit : ModuleRules
 {
-	public InventoryAndWeaponSystem(ReadOnlyTargetRules Target) : base(Target)
+	public SRPG_Kit(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		

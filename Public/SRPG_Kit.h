@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FInventoryAndWeaponSystemModule : public IModuleInterface
+class FSRPG_KitModule : public IModuleInterface
 {
 public:
 

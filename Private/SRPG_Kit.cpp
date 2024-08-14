@@ -1,15 +1,15 @@
  // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "InventoryAndWeaponSystem.h"
+#include "SRPG_Kit.h"
 
-#define LOCTEXT_NAMESPACE "FInventoryAndWeaponSystemModule"
+#define LOCTEXT_NAMESPACE "FSRPG_KitModule"
 
-void FInventoryAndWeaponSystemModule::StartupModule()
+void FSRPG_KitModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 }
 
-void FInventoryAndWeaponSystemModule::ShutdownModule()
+void FSRPG_KitModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -17,4 +17,4 @@ void FInventoryAndWeaponSystemModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FInventoryAndWeaponSystemModule, InventoryAndWeaponSystem)
+IMPLEMENT_MODULE(FSRPG_KitModule, SRPG_Kit)

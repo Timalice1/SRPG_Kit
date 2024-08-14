@@ -5,7 +5,7 @@
 #include "BaseItem.generated.h"
 
 UCLASS()
-class INVENTORYANDWEAPONSYSTEM_API ABaseItem : public AActor
+class SRPG_KIT_API ABaseItem : public AActor
 {
 	GENERATED_BODY()
 	
@@ -14,6 +14,9 @@ public:
 	ABaseItem();
 
 protected:
+
+	UPROPERTY(EditDefaultsOnly, Category = "Components")
+	class USceneComponent* Root;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
 	class USphereComponent* SphereCollision;
