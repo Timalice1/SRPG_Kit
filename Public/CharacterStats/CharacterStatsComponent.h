@@ -6,15 +6,13 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterDeadEvent);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCharacterTakeDownEvent, FName, BoneName, bool, AddImpulse, FVector, HitImpulse);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterGetUpEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterDamageTakenEvent);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SRPG_KIT_API UCharacterStatsComponent : public UActorComponent
 {
 	GENERATED_BODY()
-
+	 
 private:
 
 	bool bIsAlive;
@@ -31,9 +29,13 @@ protected:
 	float MaxHeath;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Health", meta = (ClampMin = "0", ClampMax = "1"))
 	float CriticalHealthThressholdPercent;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Character")
+	bool bIsImmortal;
 	/*Character body life time after death*/
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Character", meta = (ClampMin = "0"))
 	float DestroyBodyTime;
+	UPROPERTY(BlueprintReadWrite, Category = "Character")
+	float TakeDownTime;
 
 /*Component events*/
 protected:
@@ -41,10 +43,7 @@ protected:
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnCharacterDeadEvent OnCharacterDead;
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
-	FOnCharacterTakeDownEvent OnCharacterTakeDown;
-	UPROPERTY(BlueprintAssignable, BlueprintCallable)
-	FOnCharacterGetUpEvent OnCharacterGetUp;
-
+	FOnCharacterDamageTakenEvent OnDamageTaken;
 protected:
 
 	UFUNCTION()

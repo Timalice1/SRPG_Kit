@@ -7,8 +7,8 @@
 
 UENUM(BlueprintType)
 enum EWeaponType {
-	EWT_Pistol		UMETA(DisplayName = "Pistol"),
-	EWT_Rifle		UMETA(DisplayName = "Rifle"),
+	FireWeapon,
+	MelleWeapon
 };
 
 UCLASS()
@@ -33,11 +33,9 @@ public:
 
 	ABaseWeapon();
 
-	/*
-		TODO:
-		Move this function to a specific weapon interface
-		(And MAke this interface)
-	*/
+
+	/*Maybe create a weapon interface and move all this stuff there.
+	Make there generic implementation and extend it in blueprints*/
 	
 	UFUNCTION(BlueprintCallable)
 	void GetHandsIK_Transform(const USkeletalMeshComponent* CharacterMesh, 
@@ -46,9 +44,12 @@ public:
 		FTransform &RightHandTransform,
 		FTransform &LeftHandTransform) const;
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable,Category = "Weapon")
 	virtual void Attack() {};
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	virtual void StopAttack() {};
-	
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	TEnumAsByte<EWeaponType> GetWeaponType() const {
+		return WeaponType;
+	};
 };

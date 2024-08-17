@@ -27,4 +27,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	bool GetCurrentWeapon(ABaseWeapon* &CurrentWeapon);
 
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	bool CanAttack() const;
+
 };

@@ -82,7 +82,7 @@ void AFireWeapon::Tick(float DeltaSeconds)
 	Mesh->SetRelativeRotation(defaultRotation);
 }
 
-void AFireWeapon::Attack() {
+void AFireWeapon::Attack()  {
 	//Break this function 
 	//if weapon not reseted for new shoot
 	if (!this->bReadyToShoot)
@@ -92,7 +92,7 @@ void AFireWeapon::Attack() {
 	//if it allowing auto or burst firing
 	//and if enough ammo
 	AFireWeapon::Fire();
-	if (bAllowAutoFire /* && (CurrentAmmo > 0)*/) {
+	if (bAllowAutoFire && CurrentAmmo != 0) {
 		FTimerDelegate fireTimerDelegate;
 		fireTimerDelegate.BindUFunction(this, "Fire");
 		GetWorldTimerManager().SetTimer(FireTimer, fireTimerDelegate, FireRate, bAllowAutoFire);
@@ -108,7 +108,8 @@ void AFireWeapon::StopAttack() {
 void AFireWeapon::Fire() {
 
 	/*Do a empty shoot sound and finish this function*/
-	if (!(CurrentAmmo > 0)) {
+	if (CurrentAmmo == 0) {
+		GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Blue, "Reload required");
 		this->StopAttack();
 		return;
 	}
@@ -141,7 +142,11 @@ void AFireWeapon::Fire() {
 		MuzzleFlash->Activate(true);
 
 	AFireWeapon::Recoil();
-	//CurrentAmmo--;
+
+	if (!bInfiniteBullets) {
+		CurrentAmmo--;
+		CurrentAmmo = UKismetMathLibrary::Clamp(CurrentAmmo, 0, MagazineSize);
+	}
 
 	/*Reset weapon for a new shoot after some delay*/
 	bReadyToShoot = false;
@@ -211,6 +216,8 @@ void AFireWeapon::RotateMesh()
 
 void AFireWeapon::Reload()
 {
+	if (CurrentAmmo == MagazineSize)
+		return;
 	CurrentAmmo = MagazineSize;
 	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Yellow, "Reloaded");
 }
@@ -254,16 +261,16 @@ void AProjectile::Throw(const FVector Direction)
 
 void AProjectile::HitEvent(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	ProjectileMovement->bShouldBounce = UKismetMathLibrary::RandomBoolWithWeight(Rebound);
+	ProjectileMovement->bShouldBounce = Cast<ACharacter>(OtherActor) ? 0 : UKismetMathLibrary::RandomBoolWithWeight(Rebound);
 	Tracer->Deactivate();
 
+	/*Apply damage if other actor is damageable*/
 	if (OtherActor->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()))
-		IDamageableInterface::Execute_TakeDamage(OtherActor, Damage * ProjectileDamageMultiplyer, Hit, ProjectileMovement->Velocity);
+		IDamageableInterface::Execute_TakeDamage(OtherActor, Damage * ProjectileDamageMultiplyer, Hit);
 
-	GEngine->AddOnScreenDebugMessage(-1, 4, FColor::Red, OtherComp->GetName());
-
+	/*Apply impulse to hitted actor*/
 	if(OtherComp->IsAnySimulatingPhysics())
-		OtherComp->AddImpulse(ProjectileMovement->Velocity / 4, Hit.BoneName);
+		OtherComp->AddImpulse(ProjectileMovement->Velocity / 5, Hit.BoneName, true);
 }
 
 #pragma endregion

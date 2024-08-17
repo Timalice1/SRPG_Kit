@@ -21,6 +21,11 @@ class SRPG_KIT_API AFireWeapon : public ABaseWeapon
 #pragma region Fire weapon properties
 protected:
 
+	//Debuggind properties
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "DEBUG")
+	bool bInfiniteBullets;
+
+
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|FireWeapon",
 		meta = (ClampMin = 0))
 	int MagazineSize;
@@ -128,18 +133,14 @@ public:
 	UFUNCTION()
 	void Tick(float DeltaSeconds) override;
 
-
-	int GetProjectilesLeft() const {
-		return CurrentAmmo;
-	};
+	UFUNCTION(BlueprintCallable, Category = "Weapon|FireWeapon")
+	void Reload();
 
 protected:
 
+	/*Overrided BaseWeapon events*/
 	void Attack() override;
 	void StopAttack() override;
-
-	UFUNCTION(BlueprintCallable)
-	void Reload();
 	
 };
 

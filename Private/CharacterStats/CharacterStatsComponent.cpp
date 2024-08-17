@@ -1,4 +1,5 @@
 #include "CharacterStats/CharacterStatsComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 UCharacterStatsComponent::UCharacterStatsComponent()
 {
@@ -8,25 +9,31 @@ UCharacterStatsComponent::UCharacterStatsComponent()
 
 	MaxHeath = 100.f;
 	CriticalHealthThressholdPercent = .2f;
+	TakeDownTime = 5.f;
 
 }
 
 void UCharacterStatsComponent::BeginPlay()
 {
 	CurrentHealth = MaxHeath;
+
 }
 
 bool UCharacterStatsComponent::TakeDamage(float Amount)
 {
-	//Exit if character is already dead
-	if (!bIsAlive)
+	//Exit if character is already dead or if character is invincible
+	if (!bIsAlive || bIsImmortal)
 		return false;
 
-	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, FString::Printf(TEXT("%.2f"), Amount));
-
 	CurrentHealth -= Amount;
-	if (CurrentHealth <= 0)
+
+	if (CurrentHealth <= 0) {
 		bIsAlive = false;
+		OnCharacterDead.Broadcast();
+		return true;
+	}
+
+	OnDamageTaken.Broadcast();
 
 	return true;
 }

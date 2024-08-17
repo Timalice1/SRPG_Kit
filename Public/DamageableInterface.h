@@ -21,6 +21,6 @@ class SRPG_KIT_API IDamageableInterface
 public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void TakeDamage(float Amount, const FHitResult HitResult, FVector HitImpulse);
+	bool TakeDamage(float Amount, const FHitResult HitResult);
 
 };
