@@ -4,6 +4,10 @@
 #include "GameFramework/Actor.h"
 #include "BaseItem.generated.h"
 
+class USceneComponent;
+class USkeletalMeshComponent;
+class USphereComponent;
+
 UCLASS()
 class SRPG_KIT_API ABaseItem : public AActor
 {
@@ -13,15 +17,17 @@ public:
 	
 	ABaseItem();
 
+	void Tick(float DeltaSeconds) override;
+
 protected:
 
-	UPROPERTY(EditDefaultsOnly, Category = "Components")
-	class USceneComponent* Root;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USceneComponent> MeshRoot;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
-	class USphereComponent* SphereCollision;
+	TObjectPtr<USphereComponent> InteractionCollision;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Components")
-	class USkeletalMeshComponent* Mesh;
+	TObjectPtr<USkeletalMeshComponent> Mesh;
 
 };

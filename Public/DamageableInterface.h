@@ -3,6 +3,15 @@
 #include "UObject/Interface.h"
 #include "DamageableInterface.generated.h"
 
+UENUM(BlueprintType)
+enum EDamageType {
+	BulletDamage,
+	ExplosionDamage,
+	Punch,
+	Fire,
+	Poison
+};
+
 UINTERFACE(MinimalAPI)
 class UDamageableInterface : public UInterface
 {
@@ -20,7 +29,6 @@ class SRPG_KIT_API IDamageableInterface
 
 public:
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	bool TakeDamage(float Amount, const FHitResult HitResult);
-
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Damageable")
+	bool TakeDamage(float Amount, const FHitResult HitResult, EDamageType DamageType);
 };

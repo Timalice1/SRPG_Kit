@@ -1,30 +1,27 @@
 #include "WeaponSystem/BaseWeapon.h"
+#include "Components/SphereComponent.h"
 
 ABaseWeapon::ABaseWeapon()
 {
-	Range = 10000.f;
+	AttackRange = 10000.f;
+	AttackRadius = .1f;
 	BaseDamage = 1.f;
+
+	AimingCameraOffset = -70.f;
 }
 
-void ABaseWeapon::GetHandsIK_Transform(const USkeletalMeshComponent* CharacterMesh,
-	FName RightHandSocketName,
-	FName LeftHandSocketName,
-	FTransform& RightHandTransform,
-	FTransform& LeftHandTransform) const {
+void ABaseWeapon::Drop_Implementation()
+{
+	this->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
-	FTransform rightHandSocket = Mesh->GetSocketTransform(RightHandSocketName);
+	Mesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	Mesh->SetSimulatePhysics(true);
 
-	/*Transform right hand to bone space*/
-	FVector rightHand_location;
-	FRotator rightHand_rotation;
-	CharacterMesh->TransformToBoneSpace("ik_hand_gun",
-		rightHandSocket.GetLocation(),
-		rightHandSocket.Rotator(),
-		rightHand_location,
-		rightHand_rotation);
+	InteractionCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-	RightHandTransform = FTransform(rightHand_rotation, rightHand_location);
-	//if(!anyWeaponAttachments(Grip, Grenade thrower, etc)):
-	LeftHandTransform = Mesh->GetSocketTransform(LeftHandSocketName, RTS_Component);
-	//else: get transform from attachment mesh
+	Mesh->AddImpulse(CharacterOwner->GetActorForwardVector() * 1000);
+
+	Execute_StopAttack(this);
+
+	SetLifeSpan(300);
 }

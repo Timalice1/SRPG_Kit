@@ -3,53 +3,71 @@
 #include "CoreMinimal.h"
 #include "BaseItem.h"
 #include "GameFramework/Character.h"
+#include "WeaponInterface.h"
 #include "BaseWeapon.generated.h"
 
+class UAnimMontage;
+
 UENUM(BlueprintType)
-enum EWeaponType {
-	FireWeapon,
-	MelleWeapon
+enum EWeaponType
+{
+	Rifle,
+	Pistol,
+	Grenade,
+	Melle,
 };
 
 UCLASS()
-class SRPG_KIT_API ABaseWeapon : public ABaseItem
+class SRPG_KIT_API ABaseWeapon : public ABaseItem, public IWeaponInterface
 {
 	GENERATED_BODY()
 
 protected:
-
-	UPROPERTY(BlueprintReadOnly, meta = (ExposeOnSpawn = true))
-	ACharacter* CharacterOwner;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|Weapon", meta = (ClampMin = 1, ClampMax = 100))
-	float BaseDamage;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|Weapon")
-	float Range;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|Weapon")
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Weapon")
 	TEnumAsByte<EWeaponType> WeaponType;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "ItemProperties|Weapon")
-	bool bDoLeftHandIK = true;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon",
+			  meta = (EditCondition = "WeaponType == EWeaponType::Grenade", EditConditionHides))
+	TObjectPtr<UAnimMontage> Throw_Montage;
+	UPROPERTY(BlueprintReadOnly, meta = (ExposeOnSpawn = true))
+	TObjectPtr<ACharacter> CharacterOwner;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Weapon", meta = (ClampMin = 1, ClampMax = 100))
+	float BaseDamage;
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Weapon")
+	float AttackRange;
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Weapon")
+	float AttackRadius;
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	float AimingCameraOffset;
 
 public:
-
 	ABaseWeapon();
 
-
-	/*Maybe create a weapon interface and move all this stuff there.
-	Make there generic implementation and extend it in blueprints*/
-	
 	UFUNCTION(BlueprintCallable)
-	void GetHandsIK_Transform(const USkeletalMeshComponent* CharacterMesh, 
-		FName RightHandSocketName, 
-		FName LeftHandSocketName,
-		FTransform &RightHandTransform,
-		FTransform &LeftHandTransform) const;
+	virtual void GetHandsIK_Transform(const USkeletalMeshComponent *CharacterMesh,
+									  FTransform &RightHandTransform,
+									  FTransform &LeftHandTransform) const {};
 
-	UFUNCTION(BlueprintCallable,Category = "Weapon")
-	virtual void Attack() {};
+	void Attack_Implementation() override {};
+
+	void StopAttack_Implementation() override {};
+
+	void Drop_Implementation() override;
+
+	UFUNCTION()
+	float GetAimingCameraOffset_Implementation() const override
+	{
+		return AimingCameraOffset;
+	};
+
+	UFUNCTION()
+	ACharacter *GetOwningCharacter_Implementation() const override
+	{
+		return CharacterOwner;
+	};
+
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	virtual void StopAttack() {};
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	TEnumAsByte<EWeaponType> GetWeaponType() const {
+	TEnumAsByte<EWeaponType> GetWeaponType() const
+	{
 		return WeaponType;
 	};
 };

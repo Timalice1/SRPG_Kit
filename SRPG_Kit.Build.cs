@@ -25,7 +25,7 @@ public class SRPG_Kit : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
+				"Core", "Niagara",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

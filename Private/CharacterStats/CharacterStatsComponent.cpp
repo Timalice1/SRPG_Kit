@@ -1,4 +1,5 @@
 #include "CharacterStats/CharacterStatsComponent.h"
+#include "GameFramework/Character.h"
 #include "Kismet/KismetMathLibrary.h"
 
 UCharacterStatsComponent::UCharacterStatsComponent()
@@ -10,7 +11,6 @@ UCharacterStatsComponent::UCharacterStatsComponent()
 	MaxHeath = 100.f;
 	CriticalHealthThressholdPercent = .2f;
 	TakeDownTime = 5.f;
-
 }
 
 void UCharacterStatsComponent::BeginPlay()
@@ -32,8 +32,6 @@ bool UCharacterStatsComponent::TakeDamage(float Amount)
 		OnCharacterDead.Broadcast();
 		return true;
 	}
-
-	OnDamageTaken.Broadcast();
 
 	return true;
 }

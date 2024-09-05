@@ -6,28 +6,23 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterDeadEvent);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterDamageTakenEvent);
-
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class SRPG_KIT_API UCharacterStatsComponent : public UActorComponent
 {
 	GENERATED_BODY()
-	 
-private:
 
+private:
 	bool bIsAlive;
 	float CurrentHealth;
 
-public:	
-
+public:
 	UCharacterStatsComponent();
 
-/*Component properties*/
+	/*Component properties*/
 protected:
-
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Health", meta = (ClampMin = 0))
 	float MaxHeath;
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Health", meta = (ClampMin = "0", ClampMax = "1"))
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Health", meta = (ClampMin = "0", ClampMax = "1", Units = "Percent"))
 	float CriticalHealthThressholdPercent;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Character")
 	bool bIsImmortal;
@@ -36,37 +31,39 @@ protected:
 	float DestroyBodyTime;
 	UPROPERTY(BlueprintReadWrite, Category = "Character")
 	float TakeDownTime;
+	UPROPERTY(BlueprintReadWrite, Category = "Damage")
+	bool bStuned;
 
-/*Component events*/
+	/*Component events*/
 protected:
-
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnCharacterDeadEvent OnCharacterDead;
-	UPROPERTY(BlueprintAssignable, BlueprintCallable)
-	FOnCharacterDamageTakenEvent OnDamageTaken;
-protected:
 
+protected:
 	UFUNCTION()
 	void BeginPlay() override;
 
 	UFUNCTION(BlueprintCallable, Category = "Health")
-	bool GetIsAlive() const {
+	bool GetIsAlive() const
+	{
 		return bIsAlive;
 	}
 	UFUNCTION(BlueprintCallable, Category = "Health")
-	float GetCurrentHealth() const {
+	float GetCurrentHealth() const
+	{
 		return CurrentHealth;
 	}
 	UFUNCTION(BlueprintCallable, Category = "Health")
-	float GetHealthPercent() const {
+	float GetHealthPercent() const
+	{
 		return CurrentHealth / MaxHeath;
 	}
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	bool TakeDamage(float Amount);
 	/*Check if character current HP is under critical thresshold*/
 	UFUNCTION(BlueprintCallable, Category = "Health")
-	bool IsCriticalHealth() const {
+	bool IsCriticalHealth() const
+	{
 		return GetHealthPercent() < CriticalHealthThressholdPercent;
 	};
-
 };

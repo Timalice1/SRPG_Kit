@@ -8,12 +8,31 @@
 #include <Particles/ParticleSystemComponent.h>
 #include "WeaponSystem/CombatInterface.h"
 #include "DamageableInterface.h"
-
+#include "../../Engine/Plugins/FX/Niagara/Source/Niagara/Public/NiagaraComponent.h"
 
 #pragma region FireWeapon
 
 AFireWeapon::AFireWeapon()
 {
+
+	AimPoint = CreateDefaultSubobject<USceneComponent>("AimPoint");
+	AimPoint->SetRelativeRotation(Mesh->GetRelativeRotation());
+	AimPoint->AttachToComponent(MeshRoot, FAttachmentTransformRules::KeepRelativeTransform);
+
+	LeftHand = CreateDefaultSubobject<USceneComponent>("LeftHand");
+	LeftHand->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	RightHand = CreateDefaultSubobject<USceneComponent>("RightHand");
+	RightHand->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	MuzzleFlash = CreateDefaultSubobject<UParticleSystemComponent>("MuzzleFlash");
+	MuzzleFlash->AttachToComponent(this->Mesh, FAttachmentTransformRules::KeepRelativeTransform);
+
+	ShellEject_System = CreateDefaultSubobject<UNiagaraComponent>("ShellejectSystem");
+	ShellEject_System->AttachToComponent(Mesh, FAttachmentTransformRules::KeepRelativeTransform);
+
+	bInfiniteBullets = false;
+
 	this->RecoilYawMin = .1f;
 	this->RecoilYawMax = .1f;
 	this->RecoilPitchMin = .1f;
@@ -28,14 +47,13 @@ AFireWeapon::AFireWeapon()
 	this->MaxSpread = 1;
 
 	this->FireRate = .15f;
-	this->KickBackAmount = 10.f;
-	this->KickBack_Direction = FVector();
 	this->MagazineSize = 30;
-	this->RecoilInterpSpeed = 10.f;
+	this->RecoilTranslation_Scale = 1;
+	this->RecoilRotation_Scale = 1;
 	this->RecoilRecoverInterpSpeed = 10.f;
+	this->ReboundProbability = 0.f;
 
-	this->MuzzleFlash = CreateDefaultSubobject<UParticleSystemComponent>("MuzzleFlash");
-	this->MuzzleFlash->AttachToComponent(this->Mesh, FAttachmentTransformRules::KeepRelativeTransform, "Muzzle");
+	ADS_TurnRate = .5f;
 }
 
 void AFireWeapon::BeginPlay()
@@ -43,155 +61,213 @@ void AFireWeapon::BeginPlay()
 	Super::BeginPlay();
 
 	/*Store default mesh relative transform values*/
-	this->DefaultRotation = Mesh->GetRelativeRotation();
-	this->DefaultTranslation = Mesh->GetRelativeLocation();
+	DefaultRotation = Mesh->GetRelativeRotation();
+	DefaultTranslation = Mesh->GetRelativeLocation();
 
-	this->CurrentAmmo = this->MagazineSize;
+	CurrentAmmo = MagazineSize;
 	AnimBP = Mesh->GetAnimInstance();
 
-	/*Mesh rotation function to mesh rotation timeline*/
-	if (this->RecoilMeshRotation_Curve) {
+	// Bind Recoil rotation timeline
+	if (RecoilRotation_Curve != NULL)
+	{
 		FOnTimelineVector timelineCallback;
 		timelineCallback.BindUFunction(this, FName("RotateMesh"));
-		this->RecoilMeshRotaionTimeline.AddInterpVector(RecoilMeshRotation_Curve, timelineCallback);
+		RecoilRotaion_Timeline.AddInterpVector(RecoilRotation_Curve, timelineCallback);
+	}
+
+	// Bind recoil translation timeline
+	if (RecoilTranslation_Curve != NULL)
+	{
+		FOnTimelineVector timelineCallback;
+		timelineCallback.BindUFunction(this, FName("TranslateMesh"));
+		RecoilTranslation_Timeline.AddInterpVector(RecoilTranslation_Curve, timelineCallback);
 	}
 
 	if (MuzzleFlash != NULL && MuzzleFlash->IsActive())
-		this->MuzzleFlash->Deactivate();
+		MuzzleFlash->Deactivate();
+
+	if (ShellEject_System != NULL && ShellEject_System->IsActive())
+		ShellEject_System->Deactivate();
 }
 
 void AFireWeapon::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	//Start timeline
-	RecoilMeshRotaionTimeline.TickTimeline(DeltaSeconds);
+	// Start timelines
+	RecoilRotaion_Timeline.TickTimeline(DeltaSeconds);
+	RecoilTranslation_Timeline.TickTimeline(DeltaSeconds);
 
-	//Restore mesh translation to default
+	// Restore mesh translation to default
 	FVector defaultTranslation = UKismetMathLibrary::VInterpTo(Mesh->GetRelativeLocation(),
-		DefaultTranslation,
-		DeltaSeconds,
-		RecoilRecoverInterpSpeed);
+															   DefaultTranslation,
+															   GetWorld()->GetDeltaSeconds(),
+															   RecoilRecoverInterpSpeed);
 	Mesh->SetRelativeLocation(defaultTranslation);
 
-	//Restore mesh rotation to default
+	// Restore mesh rotation to default
 	FRotator defaultRotation = UKismetMathLibrary::RInterpTo(Mesh->GetRelativeRotation(),
-		DefaultRotation,
-		DeltaSeconds,
-		RecoilRecoverInterpSpeed);
+															 DefaultRotation,
+															 GetWorld()->GetDeltaSeconds(),
+															 RecoilRecoverInterpSpeed);
 	Mesh->SetRelativeRotation(defaultRotation);
 }
 
-void AFireWeapon::Attack()  {
-	//Break this function 
-	//if weapon not reseted for new shoot
-	if (!this->bReadyToShoot)
+void AFireWeapon::Attack_Implementation()
+{
+	// Break this function
+	// if weapon not reseted for new shoot
+	if (!bReadyToShoot || isReloading)
 		return;
 
-	//Shoot once if can, and then check 
-	//if it allowing auto or burst firing
-	//and if enough ammo
-	AFireWeapon::Fire();
-	if (bAllowAutoFire && CurrentAmmo != 0) {
-		FTimerDelegate fireTimerDelegate;
-		fireTimerDelegate.BindUFunction(this, "Fire");
-		GetWorldTimerManager().SetTimer(FireTimer, fireTimerDelegate, FireRate, bAllowAutoFire);
-	}
-
-	controllerRotation_Default = CharacterOwner->GetControlRotation();
+	GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &AFireWeapon::Fire, FireRate, bAllowAutoFire, 0);
 }
 
-void AFireWeapon::StopAttack() {
-	GetWorldTimerManager().ClearTimer(FireTimer);
+void AFireWeapon::StopAttack_Implementation()
+{
+	GetWorld()->GetTimerManager().ClearTimer(FireTimer);
 }
 
-void AFireWeapon::Fire() {
+/*
+ * Add some bullet spread for weapon
+ * Calculates random values from a given ranges
+ */
+FVector AFireWeapon::GetBulletSpread_Implementation() const
+{
+	float randX = UKismetMathLibrary::RandomFloatInRange(-MaxSpread, MaxSpread);
+	float randY = UKismetMathLibrary::RandomFloatInRange(-MaxSpread, MaxSpread);
+	float randZ = UKismetMathLibrary::RandomFloatInRange(-MaxSpread, MaxSpread);
 
-	/*Do a empty shoot sound and finish this function*/
-	if (CurrentAmmo == 0) {
-		GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Blue, "Reload required");
-		this->StopAttack();
+	return FVector(randX, randY, randZ);
+}
+
+void AFireWeapon::GetHandsIK_Transform(const USkeletalMeshComponent *CharacterMesh, FTransform &RightHandTransform, FTransform &LeftHandTransform) const
+{
+	FVector rightHand_location;
+	FRotator rightHand_rotation;
+	FVector leftHand_location;
+	FRotator leftHand_rotation;
+
+	FTransform rhs = RightHand->GetComponentTransform();
+	FTransform lhs = LeftHand->GetComponentTransform();
+
+	CharacterMesh->TransformToBoneSpace("ik_hand_gun",
+										rhs.GetLocation(),
+										rhs.Rotator(),
+										rightHand_location,
+										rightHand_rotation);
+
+	CharacterMesh->TransformToBoneSpace("hand_r",
+										lhs.GetLocation(),
+										lhs.Rotator(),
+										leftHand_location,
+										leftHand_rotation);
+
+	RightHandTransform = FTransform(rightHand_rotation, rightHand_location);
+	LeftHandTransform = FTransform(leftHand_rotation, leftHand_location);
+}
+
+void AFireWeapon::Fire()
+{
+
+	bReadyToShoot = false;
+
+	// Check if not out of ammo
+	if (CurrentAmmo == 0)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(FireTimer);
 		return;
 	}
 
+	// Define projectile spawn location
 	FVector muzzleLocation = Mesh->GetSocketLocation("Muzzle");
 	FRotator muzzleRotation = Mesh->GetSocketRotation("Muzzle");
 	FVector Direction = FVector();
 
-	if (CharacterOwner->GetClass()->ImplementsInterface(UCombatInterface::StaticClass())) 
-		Direction = ICombatInterface::Execute_GetAttackDirection(CharacterOwner, Range);
-	else 
-		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "!!!'CombatInterface' IS REQUIRED ON A CHARACTER!!!");
+	// Do loop for each pellet per shoot
+	//(Spawn a N projectiles per shoot)
+	if (Projectile != NULL)
+	{
+		for (int i = 0; i < PelletsPerShoot; i++)
+		{
 
-	if (Projectile != NULL) {
-		for (int i = 0; i < PelletsPerShoot; i++) {
 			/*Define bullet throw direction*/
+			if (CharacterOwner != nullptr)
+			{
+				if (CharacterOwner->GetClass()->ImplementsInterface(UCombatInterface::StaticClass()))
+					Direction = ICombatInterface::Execute_GetAttackDirection(CharacterOwner, AttackRange, AttackRadius);
+			}
+			else
+				logger.Error(FText::FromString(FString::Printf(TEXT("%s: Character owner is nullptr"), *GetName())));
+
 			FVector unitDirection =
-				UKismetMathLibrary::GetDirectionUnitVector(muzzleLocation, Direction + Spread());
+				UKismetMathLibrary::GetDirectionUnitVector(muzzleLocation, Direction);
 
 			/*Spawn and throw new bullet*/
-			AProjectile* bullet = GetWorld()->SpawnActor<AProjectile>(Projectile, muzzleLocation, muzzleRotation);
+			AProjectile *bullet = GetWorld()->SpawnActor<AProjectile>(Projectile, muzzleLocation, muzzleRotation);
 			bullet->SetReboundProbability(ReboundProbability);
 			bullet->SetDamageAmount(BaseDamage);
 			bullet->Throw(unitDirection * Strenght);
 		}
 	}
 
-	/*Activate muzzle flash particles*/
+	if (!bInfiniteBullets && CurrentAmmo > 0)
+		CurrentAmmo--;
+
+	/*Activate muzzle flash component*/
 	if (MuzzleFlash != NULL)
 		MuzzleFlash->Activate(true);
 
+	////Move weapon slider bone from mesh anim instance
+	// TObjectPtr<UAnimInstance> animInst = Mesh->GetAnimInstance();
+	// if (animInst != NULL && animInst->GetClass()->ImplementsInterface(UFireWeaponInterface::StaticClass()))
+	//	IFireWeaponInterface::Execute_Slide(animInst, CurrentAmmo > 0);
+
+	if (ShellEject_System != NULL)
+		ShellEject_System->Activate(true);
+
 	AFireWeapon::Recoil();
-
-	if (!bInfiniteBullets) {
-		CurrentAmmo--;
-		CurrentAmmo = UKismetMathLibrary::Clamp(CurrentAmmo, 0, MagazineSize);
-	}
-
 	/*Reset weapon for a new shoot after some delay*/
-	bReadyToShoot = false;
-	GetWorldTimerManager().SetTimer(ResetTimer, this, &AFireWeapon::ResetShoot, FireRate, false);
+	GetWorld()->GetTimerManager().SetTimer(ResetTimer, this, &AFireWeapon::ResetShoot, FireRate, false);
 }
 
-FVector AFireWeapon::Spread() {
-	/* 
-	* Add some bullet spread for weapon
-	* Calculates random values from a given ranges
-	*/
-
-	float randYaw = UKismetMathLibrary::RandomFloatInRange(-MaxSpread, MaxSpread);
-	float randPitch = UKismetMathLibrary::RandomFloatInRange(-MaxSpread, MaxSpread);
-
-	return FVector(0, randYaw, randPitch);
-}
-
+/*
+ * Reset weapon firing ability to do a new shoot
+ * Do it by defining weapon fire rate value and timers.
+ */
 void AFireWeapon::ResetShoot()
 {
 	bReadyToShoot = true;
-	ResetTimer.Invalidate();
+	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "Reset");
+	GetWorld()->GetTimerManager().ClearTimer(ResetTimer);
 }
 
+/*
+ * Update weapon mesh transform.
+ * Move mesh back in defined direction with defined ammount
+ * Use a Vector Curve and TimelineComponent to rotate the mesh and attached assets
+ */
 void AFireWeapon::Recoil()
 {
-
-	/*Update weapon mesh location (KickBack)*/
-	FVector currentLocation = Mesh->GetRelativeLocation();
-	FVector targetlLocation = currentLocation - (KickBack_Direction*KickBackAmount);
-	FVector recoil = UKismetMathLibrary::VInterpTo(currentLocation, targetlLocation, GetWorld()->GetDeltaSeconds(), RecoilInterpSpeed);
-	Mesh->SetRelativeLocation(recoil);
-
 	/*Start the recoil rotation timeline (rotates a weapon mesh around pivot point)*/
-	RecoilMeshRotaionTimeline.PlayFromStart();
+	RecoilRotaion_Timeline.PlayFromStart();
+	RecoilTranslation_Timeline.PlayFromStart();
 
-	//Add some recoil rotation to character controller by pitch and yae axis
+	// Add some recoil rotation to character controller by pitch and yae axis
 	float randPitch = -(UKismetMathLibrary::RandomFloatInRange(RecoilPitchMin, RecoilPitchMax));
 	float randYaw = UKismetMathLibrary::RandomFloatInRange(RecoilYawMin, RecoilYawMax);
 
-	CharacterOwner->AddControllerPitchInput(randPitch);
-	CharacterOwner->AddControllerYawInput(randYaw);
-	
+	if (CharacterOwner != nullptr)
+	{
+		CharacterOwner->AddControllerPitchInput(randPitch * GetWorld()->GetDeltaSeconds());
+		CharacterOwner->AddControllerYawInput(randYaw * GetWorld()->GetDeltaSeconds());
+	}
+	else
+		logger.Error(FText::FromString(FString::Printf(TEXT("%s: Character owner is nullptr"), *GetName())));
+
 	/*Add camera shake effect for recoil*/
-	if (RecoilCameraShake_Class != NULL && bToogleCameraShake) {
+	if (RecoilCameraShake_Class != NULL && bToogleCameraShake)
+	{
 		FVector cameraLocation = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation();
 		UGameplayStatics::PlayWorldCameraShake(GetWorld(), RecoilCameraShake_Class, cameraLocation, 10.f, 10.f);
 	}
@@ -199,27 +275,44 @@ void AFireWeapon::Recoil()
 
 void AFireWeapon::RotateMesh()
 {
-	//Get remaining time from timeline
-	float timelineValue = RecoilMeshRotaionTimeline.GetPlaybackPosition();
+	float timelineValue = RecoilRotaion_Timeline.GetPlaybackPosition();
 	FRotator currentRotation = Mesh->GetRelativeRotation();
+	FVector curveValue = RecoilRotation_Curve->GetVectorValue(timelineValue) * -1 * RecoilRotation_Scale;
+	curveValue *= GetWorld()->GetDeltaSeconds();
 
-	//Add a values from recoil curve by timeline playback time
-	//to current mesh rotation
-	FVector curveValue = RecoilMeshRotation_Curve->GetVectorValue(timelineValue) * -1;
-	FRotator recoilRotation = FRotator(currentRotation.Pitch + curveValue.X,
+	FRotator recoilRotation = FRotator(
+		currentRotation.Pitch + curveValue.X,
 		currentRotation.Yaw + curveValue.Z,
 		currentRotation.Roll + curveValue.Y);
 
-	//Set the new mesh rotation
 	Mesh->SetRelativeRotation(recoilRotation);
 }
 
-void AFireWeapon::Reload()
+void AFireWeapon::TranslateMesh()
 {
-	if (CurrentAmmo == MagazineSize)
-		return;
-	CurrentAmmo = MagazineSize;
-	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Yellow, "Reloaded");
+	float timelineValue = RecoilTranslation_Timeline.GetPlaybackPosition();
+	FVector curveValue = RecoilTranslation_Curve->GetVectorValue(timelineValue) * RecoilTranslation_Scale;
+	FVector currentLocation = Mesh->GetRelativeLocation();
+	curveValue *= GetWorld()->GetDeltaSeconds();
+
+	FVector recoilLocation = FVector(
+		currentLocation.X + curveValue.X,
+		currentLocation.Y + curveValue.Y,
+		currentLocation.Z + curveValue.Z);
+
+	Mesh->SetRelativeLocation(recoilLocation);
+}
+
+void AFireWeapon::ReloadStart_Implementation()
+{
+	isReloading = true;
+}
+
+void AFireWeapon::ReloadEnd_Implementation(bool IsInterrupted)
+{
+	if (!IsInterrupted)
+		CurrentAmmo = MagazineSize;
+	isReloading = false;
 }
 
 #pragma endregion
@@ -232,11 +325,10 @@ AProjectile::AProjectile()
 	SetLifeSpan(2.f);
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>("ProjectileMesh");
-	//ProjectileMesh->SetNotifyRigidBodyCollision(true);
 	ProjectileMesh->SetGenerateOverlapEvents(true);
+	ProjectileMesh->SetCollisionProfileName("Projectile");
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileMovement");
-	ProjectileMovement->bRotationFollowsVelocity = true;
 
 	Tracer = CreateDefaultSubobject<UParticleSystemComponent>("Tracer");
 	Tracer->AttachToComponent(ProjectileMesh, FAttachmentTransformRules::KeepRelativeTransform);
@@ -248,7 +340,6 @@ AProjectile::AProjectile()
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	ProjectileMesh->OnComponentHit.AddDynamic(this, &AProjectile::HitEvent);
 
 	if (Tracer != NULL)
 		Tracer->Activate();
@@ -257,20 +348,31 @@ void AProjectile::BeginPlay()
 void AProjectile::Throw(const FVector Direction)
 {
 	ProjectileMovement->Velocity = Direction;
+	ProjectileMesh->OnComponentHit.AddDynamic(this, &AProjectile::HitEvent);
 }
 
-void AProjectile::HitEvent(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void AProjectile::HitEvent(UPrimitiveComponent *HitComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp, FVector NormalImpulse, const FHitResult &Hit)
 {
-	ProjectileMovement->bShouldBounce = Cast<ACharacter>(OtherActor) ? 0 : UKismetMathLibrary::RandomBoolWithWeight(Rebound);
-	Tracer->Deactivate();
+
+	DrawDebugSphere(GetWorld(), Hit.Location, 10, 10, FColor::Green, false, 2.5f, 0, 1.f);
 
 	/*Apply damage if other actor is damageable*/
 	if (OtherActor->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()))
-		IDamageableInterface::Execute_TakeDamage(OtherActor, Damage * ProjectileDamageMultiplyer, Hit);
+	{
+		bool damaged = IDamageableInterface::Execute_TakeDamage(OtherActor, Damage * ProjectileDamageMultiplyer, Hit, EDamageType::BulletDamage);
+	}
 
 	/*Apply impulse to hitted actor*/
-	if(OtherComp->IsAnySimulatingPhysics())
-		OtherComp->AddImpulse(ProjectileMovement->Velocity / 5, Hit.BoneName, true);
+	if (OtherComp->IsAnySimulatingPhysics())
+		OtherComp->AddImpulse(ProjectileMovement->Velocity * ImpulseModifier, Hit.BoneName, true);
+
+	ProjectileMovement->bShouldBounce = Cast<ACharacter>(OtherActor) ? 0 : UKismetMathLibrary::RandomBoolWithWeight(Rebound);
+	if (!ProjectileMovement->bShouldBounce)
+		Destroy();
+
+	Tracer->Deactivate();
+
+	/*ADD SPAWN DECALS HERE AND SPAWN SOME HIT EMMITERS*/
 }
 
 #pragma endregion

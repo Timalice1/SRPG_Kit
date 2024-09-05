@@ -12,22 +12,38 @@ class UCombatInterface : public UInterface
 };
 
 /**
- * 
+ *
  */
 class SRPG_KIT_API ICombatInterface
 {
 	GENERATED_BODY()
 
 public:
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Combat")
+	void Attack();
 
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
-	FVector GetAttackDirection(const float Range);
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Combat")
+	void StopAttack();
 
-	/*Return currently equipped weapon if it's valid*/
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
-	bool GetCurrentWeapon(ABaseWeapon* &CurrentWeapon);
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Combat")
+	FVector GetAttackDirection(const float Range = 10000.f, const float Radius = .1f);
 
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Combat")
 	bool CanAttack() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Combat")
+	void Aim();
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Combat")
+	void StopAiming();
+
+	/*Return currently equipped weapon if it's valid*/
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Weapon")
+	bool GetCurrentWeapon(ABaseWeapon *&CurrentWeapon) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Weapon")
+	void DropWeapon();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "FireWeapon")
+	void ReloadWeapon();
 };
