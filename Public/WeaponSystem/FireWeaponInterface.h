@@ -15,7 +15,6 @@ class SRPG_KIT_API IFireWeaponInterface
 	GENERATED_BODY()
 
 public:
-
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeapon")
 	FVector GetBulletSpread() const;
 
@@ -32,7 +31,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeapon|Reloading")
 	void ReloadEnd(bool IsInterrupted);
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeapon|Reloading")
-	UStaticMesh* GetMagazineMesh() const;
+	UStaticMesh *GetMagazineMesh() const;
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeaponReloading")
 	FName GetMagazineBoneName() const;
+
+	// Property getters
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeapon|WeaponData")
+	int32 GetCurrentAmmo() const;
 };

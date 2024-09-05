@@ -11,7 +11,7 @@ void ULoadoutComponent::BeginPlay()
   return;
 }
 
-void ULoadoutComponent::AssignToSlot(const int32 slot, ABaseWeapon *Weapon)
+void ULoadoutComponent::AssignToSlot(const int32 slot, ABaseWeapon *Weapon, USceneComponent *AttachTo, FName AttachBoneName)
 {
   if (Weapon == nullptr)
   {
@@ -26,6 +26,12 @@ void ULoadoutComponent::AssignToSlot(const int32 slot, ABaseWeapon *Weapon)
   }
 
   Slots.Emplace(slot, Weapon);
+  if (AttachTo != nullptr)
+  {
+    attachmentSlots.Emplace(slot, AttachTo);
+    Weapon->AttachToComponent(AttachTo, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachBoneName);
+  }
+
   return;
 }
 
@@ -44,7 +50,11 @@ bool ULoadoutComponent::EquipWeapon(const int32 FromSlot, USceneComponent *Attac
     return false;
   }
 
+  if (ActiveWeapon != nullptr)
+    HideWeapon();
+
   ActiveWeapon = Slots[FromSlot];
+  activeSlot = FromSlot;
   if (AttachTo != nullptr)
     ActiveWeapon->AttachToComponent(AttachTo, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachBoneName);
 
@@ -53,16 +63,23 @@ bool ULoadoutComponent::EquipWeapon(const int32 FromSlot, USceneComponent *Attac
 
 void ULoadoutComponent::HideWeapon()
 {
+  ActiveWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+  if (!attachmentSlots.IsEmpty())
+    AssignToSlot(activeSlot, ActiveWeapon, attachmentSlots[activeSlot], NAME_None);
+
   ActiveWeapon = NULL;
+  activeSlot = -1;
   return;
 }
 
 bool ULoadoutComponent::DropWeapon()
 {
-  if (ActiveWeapon != NULL && ActiveWeapon->GetClass()->ImplementsInterface(UWeaponInterface::StaticClass()))
+  if (ActiveWeapon != NULL && ActiveWeapon->GetClass()->ImplementsInterface(UWeaponInterface::StaticClass()) && activeSlot != -1)
   {
     IWeaponInterface::Execute_Drop(ActiveWeapon);
     ActiveWeapon = nullptr;
+    Slots.Emplace(activeSlot);
     return true;
   }
 

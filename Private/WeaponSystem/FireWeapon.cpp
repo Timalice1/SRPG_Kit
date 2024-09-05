@@ -117,8 +117,17 @@ void AFireWeapon::Attack_Implementation()
 {
 	// Break this function
 	// if weapon not reseted for new shoot
-	if (!bReadyToShoot || isReloading)
+	if (!bReadyToShoot)
+	{
+		GEngine->AddOnScreenDebugMessage(0, 1, FColor::Red, FString::Printf(TEXT("NotReady")));
 		return;
+	}
+
+	if (isReloading)
+	{
+		GEngine->AddOnScreenDebugMessage(0, 1, FColor::Red, FString::Printf(TEXT("Reloading")));
+		return;
+	}
 
 	GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &AFireWeapon::Fire, FireRate, bAllowAutoFire, 0);
 }
@@ -169,7 +178,6 @@ void AFireWeapon::GetHandsIK_Transform(const USkeletalMeshComponent *CharacterMe
 
 void AFireWeapon::Fire()
 {
-
 	bReadyToShoot = false;
 
 	// Check if not out of ammo
@@ -214,6 +222,7 @@ void AFireWeapon::Fire()
 	if (!bInfiniteBullets && CurrentAmmo > 0)
 		CurrentAmmo--;
 
+	GEngine->AddOnScreenDebugMessage(0, 1.f, FColor::Blue, FString::Printf(TEXT("Bullets left: %d"), CurrentAmmo));
 	/*Activate muzzle flash component*/
 	if (MuzzleFlash != NULL)
 		MuzzleFlash->Activate(true);
@@ -305,14 +314,20 @@ void AFireWeapon::TranslateMesh()
 
 void AFireWeapon::ReloadStart_Implementation()
 {
+	GEngine->AddOnScreenDebugMessage(0, 1, FColor::Green, FString::Printf(TEXT("ReloadStart")));
 	isReloading = true;
 }
 
 void AFireWeapon::ReloadEnd_Implementation(bool IsInterrupted)
 {
 	if (!IsInterrupted)
+	{
 		CurrentAmmo = MagazineSize;
+		GEngine->AddOnScreenDebugMessage(0, 1, FColor::Green, FString::Printf(TEXT("%d"), CurrentAmmo));
+	}
 	isReloading = false;
+	GEngine->AddOnScreenDebugMessage(0, 10, FColor::Green, FString::Printf(TEXT("ReloadFinish")));
+	return;
 }
 
 #pragma endregion
@@ -375,4 +390,4 @@ void AProjectile::HitEvent(UPrimitiveComponent *HitComponent, AActor *OtherActor
 	/*ADD SPAWN DECALS HERE AND SPAWN SOME HIT EMMITERS*/
 }
 
-#pragma endregion
+#pragma endregion Projectile

@@ -114,7 +114,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FireWeapon|Animations")
 	TObjectPtr<UAnimMontage> Reload_Montage;
 
-#pragma endregion
+#pragma endregion FireWeaponProperties
 
 #pragma region For internal use
 private:
@@ -207,6 +207,11 @@ protected:
 		FName name = "None";
 		name = MagazineBoneName;
 		return name;
+	};
+
+	int32 GetCurrentAmmo_Implementation() const override
+	{
+		return CurrentAmmo;
 	};
 };
 

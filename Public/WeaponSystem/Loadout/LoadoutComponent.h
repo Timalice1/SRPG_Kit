@@ -13,6 +13,12 @@ class SRPG_KIT_API ULoadoutComponent : public UActorComponent
 
   FMessageLog logger = FMessageLog(FName("PIE"));
 
+  UPROPERTY()
+  int32 activeSlot = -1;
+
+  UPROPERTY()
+  TMap<int32, USceneComponent *> attachmentSlots;
+
 public:
   ULoadoutComponent();
 
@@ -36,7 +42,7 @@ protected:
   ABaseWeapon *GetActiveWeapon() const { return ActiveWeapon; };
 
   UFUNCTION(BlueprintCallable, Category = "Loadout|Slots")
-  void AssignToSlot(const int32 slot, ABaseWeapon *Weapon);
+  void AssignToSlot(const int32 slot, ABaseWeapon *Weapon, USceneComponent *AttachTo, FName AttachBoneName);
 
   UFUNCTION(BlueprintCallable, Category = "Loadout|Slots")
   bool EquipWeapon(const int32 FromSlot, USceneComponent *AttachTo, const FName AttachBoneName);
