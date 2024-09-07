@@ -16,22 +16,14 @@ UCharacterStatsComponent::UCharacterStatsComponent()
 void UCharacterStatsComponent::BeginPlay()
 {
 	CurrentHealth = MaxHeath;
-
 }
 
 bool UCharacterStatsComponent::TakeDamage(float Amount)
 {
-	//Exit if character is already dead or if character is invincible
+	// Exit if character is already dead or if character is invincible
 	if (!bIsAlive || bIsImmortal)
 		return false;
 
-	CurrentHealth -= Amount;
-
-	if (CurrentHealth <= 0) {
-		bIsAlive = false;
-		OnCharacterDead.Broadcast();
-		return true;
-	}
-
+	CurrentHealth = FMath::Max(0, CurrentHealth - Amount);
 	return true;
 }

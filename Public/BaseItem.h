@@ -12,15 +12,13 @@ UCLASS()
 class SRPG_KIT_API ABaseItem : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
-	
+
+public:
 	ABaseItem();
 
 	void Tick(float DeltaSeconds) override;
 
 protected:
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> MeshRoot;
 
@@ -29,5 +27,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Components")
 	TObjectPtr<USkeletalMeshComponent> Mesh;
-
 };

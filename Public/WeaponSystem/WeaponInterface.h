@@ -32,5 +32,5 @@ public:
 	float GetAimingCameraOffset() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "BaseWeapon")
-	ACharacter *GetOwningCharacter() const;
+	AActor *GetOwningCharacter() const;
 };

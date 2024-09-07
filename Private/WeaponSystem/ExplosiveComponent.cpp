@@ -5,6 +5,9 @@
 #include <Kismet/GameplayStatics.h>
 #include "Particles/ParticleSystem.h"
 #include <Components/BoxComponent.h>
+#include "WeaponSystem/WeaponInterface.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/Actor.h"
 
 UExplosiveComponent::UExplosiveComponent()
 {
@@ -66,7 +69,15 @@ void UExplosiveComponent::Explode_Implementation()
 		{
 			// If actor implements damageable interface, apply explosion damage to this actor
 			if (actor->Implements<UDamageableInterface>())
-				IDamageableInterface::Execute_TakeDamage(actor, ExplosionDamage, nullHit, EDamageType::ExplosionDamage);
+			{
+				AActor *DamageCauser = GetOwner();
+				// Check if owner actor of this component is weapon. Get owning character if its true as damage causer
+				// By default damage causer is owning actor himself
+				if (GetOwner()->GetClass()->ImplementsInterface(UWeaponInterface::StaticClass()))
+					DamageCauser = IWeaponInterface::Execute_GetOwningCharacter(GetOwner());
+
+				IDamageableInterface::Execute_TakeDamage(actor, ExplosionDamage, nullHit, EDamageType::ExplosionDamage, DamageCauser);
+			}
 
 			// Othervise apply impusle to all other objects
 			FVector explosionImpulse = UKismetMathLibrary::GetDirectionUnitVector(epicenter, actor->GetActorLocation());

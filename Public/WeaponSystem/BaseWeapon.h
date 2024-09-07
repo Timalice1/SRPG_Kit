@@ -29,7 +29,7 @@ protected:
 			  meta = (EditCondition = "WeaponType == EWeaponType::Grenade", EditConditionHides))
 	TObjectPtr<UAnimMontage> Throw_Montage;
 	UPROPERTY(BlueprintReadOnly, meta = (ExposeOnSpawn = true))
-	TObjectPtr<ACharacter> CharacterOwner;
+	TObjectPtr<AActor> CharacterOwner;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Weapon", meta = (ClampMin = 1, ClampMax = 100))
 	float BaseDamage;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Weapon")
@@ -60,7 +60,7 @@ public:
 	};
 
 	UFUNCTION()
-	ACharacter *GetOwningCharacter_Implementation() const override
+	AActor *GetOwningCharacter_Implementation() const override
 	{
 		return CharacterOwner;
 	};

@@ -11,6 +11,7 @@
 class AProjectile;
 class UParticleSystemComponent;
 class UNiagaraComponent;
+class USoundCue;
 
 UENUM(BlueprintType)
 enum EFireMode
@@ -114,6 +115,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FireWeapon|Animations")
 	TObjectPtr<UAnimMontage> Reload_Montage;
 
+	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon|Sounds")
+	TObjectPtr<USoundCue> Shoot_Sound;
+	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon|Sounds")
+	TObjectPtr<USoundCue> Dry_Sound;
+	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon|Sounds")
+	TObjectPtr<USoundCue> Reload_Sound;
+
 #pragma endregion FireWeaponProperties
 
 #pragma region For internal use
@@ -160,6 +168,12 @@ public:
 
 	UFUNCTION()
 	void Tick(float DeltaSeconds) override;
+
+	UFUNCTION()
+	void OnBulletDamage()
+	{
+		GEngine->AddOnScreenDebugMessage(0, 2, FColor::Blue, FString::Printf(TEXT("Bullet is damaged some character")));
+	};
 
 protected:
 	void Attack_Implementation() override;
@@ -215,6 +229,8 @@ protected:
 	};
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterDamaged);
+
 UCLASS()
 class SRPG_KIT_API AProjectile : public AActor
 {
@@ -223,6 +239,9 @@ class SRPG_KIT_API AProjectile : public AActor
 
 	float Rebound = 0;
 	float Damage = 10.f;
+
+	UPROPERTY()
+	TObjectPtr<AActor> Attacker;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
@@ -237,9 +256,15 @@ protected:
 	float ImpulseModifier = .1f;
 
 public:
+	/*Calls whenewer bullet is damage a character*/
+	FOnCharacterDamaged OnCharacterDamaged;
+
 	AProjectile();
+
 	void BeginPlay() override;
-	void Throw(const FVector Direction);
+
+	void Throw(const FVector Direction, class AActor *DamageCauser);
+
 	UFUNCTION()
 	void HitEvent(UPrimitiveComponent *HitComponent,
 				  AActor *OtherActor,

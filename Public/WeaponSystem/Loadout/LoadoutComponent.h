@@ -31,7 +31,7 @@ protected:
   int32 MaxSlots = 1;
 
   /*Map of loadout slots*/
-  UPROPERTY(BlueprintReadOnly, Category = "Loadout|Slots")
+  UPROPERTY()
   TMap<int32, ABaseWeapon *> Slots;
 
 protected:
@@ -41,12 +41,35 @@ protected:
   UFUNCTION(BlueprintCallable, Category = "Loadout")
   ABaseWeapon *GetActiveWeapon() const { return ActiveWeapon; };
 
+  /**
+   * Returns a map of loadout slots and assigned weapons
+   */
   UFUNCTION(BlueprintCallable, Category = "Loadout|Slots")
-  void AssignToSlot(const int32 slot, ABaseWeapon *Weapon, USceneComponent *AttachTo, FName AttachBoneName);
+  TMap<int32, ABaseWeapon *> GetSlots() const
+  {
+    return Slots;
+  }
 
+  /**
+   * Assigning current weapon to selected slot number
+   * Weapon object reference cannot be nullptr and slot number must be in range 0 - MaxSlots
+   * @param AttachTo Represents scene component, where weapon needs to be attached (ex. on character mesh).
+   * Can be null, then weapon are not be attached to character
+   */
+  UFUNCTION(BlueprintCallable, Category = "Loadout|Slots")
+  void AssignToSlot(const int32 slot, ABaseWeapon *Weapon, USceneComponent *AttachTo);
+
+  /**
+   * Equip weapon from selected slot.
+   * It will make weapon from slot (if slot is not empty) active,
+   * and attach to given scene component (ex. in character hand)
+   */
   UFUNCTION(BlueprintCallable, Category = "Loadout|Slots")
   bool EquipWeapon(const int32 FromSlot, USceneComponent *AttachTo, const FName AttachBoneName);
 
+  /**
+   * Attach active weapon back to holster slot
+   */
   UFUNCTION(BlueprintCallable, Category = "Loadout|ActiveWeapon")
   void HideWeapon();
 

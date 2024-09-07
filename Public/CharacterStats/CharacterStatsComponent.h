@@ -48,6 +48,13 @@ protected:
 	{
 		return bIsAlive;
 	}
+
+	UFUNCTION(BlueprintCallable, Category = "Heath")
+	void SetIsAlive(bool IsAlive)
+	{
+		bIsAlive = IsAlive;
+	}
+
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	float GetCurrentHealth() const
 	{

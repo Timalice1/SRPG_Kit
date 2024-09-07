@@ -8,6 +8,7 @@
 #include <Particles/ParticleSystemComponent.h>
 #include "WeaponSystem/CombatInterface.h"
 #include "DamageableInterface.h"
+#include "Sound/SoundCue.h"
 #include "../../Engine/Plugins/FX/Niagara/Source/Niagara/Public/NiagaraComponent.h"
 
 #pragma region FireWeapon
@@ -68,7 +69,7 @@ void AFireWeapon::BeginPlay()
 	AnimBP = Mesh->GetAnimInstance();
 
 	// Bind Recoil rotation timeline
-	if (RecoilRotation_Curve != NULL)
+	if (RecoilRotation_Curve != nullptr)
 	{
 		FOnTimelineVector timelineCallback;
 		timelineCallback.BindUFunction(this, FName("RotateMesh"));
@@ -76,17 +77,17 @@ void AFireWeapon::BeginPlay()
 	}
 
 	// Bind recoil translation timeline
-	if (RecoilTranslation_Curve != NULL)
+	if (RecoilTranslation_Curve != nullptr)
 	{
 		FOnTimelineVector timelineCallback;
 		timelineCallback.BindUFunction(this, FName("TranslateMesh"));
 		RecoilTranslation_Timeline.AddInterpVector(RecoilTranslation_Curve, timelineCallback);
 	}
 
-	if (MuzzleFlash != NULL && MuzzleFlash->IsActive())
+	if (MuzzleFlash != nullptr && MuzzleFlash->IsActive())
 		MuzzleFlash->Deactivate();
 
-	if (ShellEject_System != NULL && ShellEject_System->IsActive())
+	if (ShellEject_System != nullptr && ShellEject_System->IsActive())
 		ShellEject_System->Deactivate();
 }
 
@@ -117,18 +118,8 @@ void AFireWeapon::Attack_Implementation()
 {
 	// Break this function
 	// if weapon not reseted for new shoot
-	if (!bReadyToShoot)
-	{
-		GEngine->AddOnScreenDebugMessage(0, 1, FColor::Red, FString::Printf(TEXT("NotReady")));
+	if (!bReadyToShoot || isReloading)
 		return;
-	}
-
-	if (isReloading)
-	{
-		GEngine->AddOnScreenDebugMessage(0, 1, FColor::Red, FString::Printf(TEXT("Reloading")));
-		return;
-	}
-
 	GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &AFireWeapon::Fire, FireRate, bAllowAutoFire, 0);
 }
 
@@ -194,11 +185,10 @@ void AFireWeapon::Fire()
 
 	// Do loop for each pellet per shoot
 	//(Spawn a N projectiles per shoot)
-	if (Projectile != NULL)
+	if (Projectile != nullptr)
 	{
 		for (int i = 0; i < PelletsPerShoot; i++)
 		{
-
 			/*Define bullet throw direction*/
 			if (CharacterOwner != nullptr)
 			{
@@ -215,25 +205,23 @@ void AFireWeapon::Fire()
 			AProjectile *bullet = GetWorld()->SpawnActor<AProjectile>(Projectile, muzzleLocation, muzzleRotation);
 			bullet->SetReboundProbability(ReboundProbability);
 			bullet->SetDamageAmount(BaseDamage);
-			bullet->Throw(unitDirection * Strenght);
+			bullet->Throw(unitDirection * Strenght, CharacterOwner);
 		}
 	}
 
 	if (!bInfiniteBullets && CurrentAmmo > 0)
-		CurrentAmmo--;
+		CurrentAmmo = FMath::Max(0, CurrentAmmo - 1);
 
 	GEngine->AddOnScreenDebugMessage(0, 1.f, FColor::Blue, FString::Printf(TEXT("Bullets left: %d"), CurrentAmmo));
 	/*Activate muzzle flash component*/
-	if (MuzzleFlash != NULL)
+	if (MuzzleFlash != nullptr)
 		MuzzleFlash->Activate(true);
 
-	////Move weapon slider bone from mesh anim instance
-	// TObjectPtr<UAnimInstance> animInst = Mesh->GetAnimInstance();
-	// if (animInst != NULL && animInst->GetClass()->ImplementsInterface(UFireWeaponInterface::StaticClass()))
-	//	IFireWeaponInterface::Execute_Slide(animInst, CurrentAmmo > 0);
-
-	if (ShellEject_System != NULL)
+	if (ShellEject_System != nullptr)
 		ShellEject_System->Activate(true);
+
+	if (Shoot_Sound != nullptr)
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Shoot_Sound, GetActorLocation());
 
 	AFireWeapon::Recoil();
 	/*Reset weapon for a new shoot after some delay*/
@@ -265,17 +253,20 @@ void AFireWeapon::Recoil()
 	// Add some recoil rotation to character controller by pitch and yae axis
 	float randPitch = -(UKismetMathLibrary::RandomFloatInRange(RecoilPitchMin, RecoilPitchMax));
 	float randYaw = UKismetMathLibrary::RandomFloatInRange(RecoilYawMin, RecoilYawMax);
-
 	if (CharacterOwner != nullptr)
 	{
-		CharacterOwner->AddControllerPitchInput(randPitch * GetWorld()->GetDeltaSeconds());
-		CharacterOwner->AddControllerYawInput(randYaw * GetWorld()->GetDeltaSeconds());
+		auto character = Cast<ACharacter>(CharacterOwner);
+		if (character != nullptr)
+		{
+			character->AddControllerPitchInput(randPitch * GetWorld()->GetDeltaSeconds());
+			character->AddControllerYawInput(randYaw * GetWorld()->GetDeltaSeconds());
+		}
 	}
 	else
 		logger.Error(FText::FromString(FString::Printf(TEXT("%s: Character owner is nullptr"), *GetName())));
 
 	/*Add camera shake effect for recoil*/
-	if (RecoilCameraShake_Class != NULL && bToogleCameraShake)
+	if (RecoilCameraShake_Class != nullptr && bToogleCameraShake)
 	{
 		FVector cameraLocation = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation();
 		UGameplayStatics::PlayWorldCameraShake(GetWorld(), RecoilCameraShake_Class, cameraLocation, 10.f, 10.f);
@@ -321,16 +312,12 @@ void AFireWeapon::ReloadStart_Implementation()
 void AFireWeapon::ReloadEnd_Implementation(bool IsInterrupted)
 {
 	if (!IsInterrupted)
-	{
 		CurrentAmmo = MagazineSize;
-		GEngine->AddOnScreenDebugMessage(0, 1, FColor::Green, FString::Printf(TEXT("%d"), CurrentAmmo));
-	}
 	isReloading = false;
-	GEngine->AddOnScreenDebugMessage(0, 10, FColor::Green, FString::Printf(TEXT("ReloadFinish")));
 	return;
 }
 
-#pragma endregion
+#pragma endregion FireWeapon
 
 #pragma region Projectile
 
@@ -356,14 +343,15 @@ void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (Tracer != NULL)
+	if (Tracer != nullptr)
 		Tracer->Activate();
 }
 
-void AProjectile::Throw(const FVector Direction)
+void AProjectile::Throw(const FVector Direction, AActor *DamageCauser)
 {
 	ProjectileMovement->Velocity = Direction;
 	ProjectileMesh->OnComponentHit.AddDynamic(this, &AProjectile::HitEvent);
+	this->Attacker = DamageCauser;
 }
 
 void AProjectile::HitEvent(UPrimitiveComponent *HitComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp, FVector NormalImpulse, const FHitResult &Hit)
@@ -374,7 +362,11 @@ void AProjectile::HitEvent(UPrimitiveComponent *HitComponent, AActor *OtherActor
 	/*Apply damage if other actor is damageable*/
 	if (OtherActor->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()))
 	{
-		bool damaged = IDamageableInterface::Execute_TakeDamage(OtherActor, Damage * ProjectileDamageMultiplyer, Hit, EDamageType::BulletDamage);
+		bool damaged = IDamageableInterface::Execute_TakeDamage(OtherActor,
+																Damage * ProjectileDamageMultiplyer,
+																Hit,
+																EDamageType::BulletDamage,
+																Attacker);
 	}
 
 	/*Apply impulse to hitted actor*/

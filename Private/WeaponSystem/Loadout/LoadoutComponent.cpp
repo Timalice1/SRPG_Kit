@@ -11,11 +11,11 @@ void ULoadoutComponent::BeginPlay()
   return;
 }
 
-void ULoadoutComponent::AssignToSlot(const int32 slot, ABaseWeapon *Weapon, USceneComponent *AttachTo, FName AttachBoneName)
+void ULoadoutComponent::AssignToSlot(const int32 slot, ABaseWeapon *Weapon, USceneComponent *AttachTo)
 {
   if (Weapon == nullptr)
   {
-    logger.Error(FText::FromString(FString::Printf(TEXT("%s: Weapon pin mus have a connection, Node: AssignToSlot()"), *(GetOwner()->GetName()))));
+    logger.Error(FText::FromString(FString::Printf(TEXT("%s: Weapon pin must have a connection, Node: AssignToSlot()"), *(GetOwner()->GetName()))));
     return;
   }
 
@@ -29,13 +29,13 @@ void ULoadoutComponent::AssignToSlot(const int32 slot, ABaseWeapon *Weapon, USce
   if (AttachTo != nullptr)
   {
     attachmentSlots.Emplace(slot, AttachTo);
-    Weapon->AttachToComponent(AttachTo, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachBoneName);
+    Weapon->AttachToComponent(AttachTo, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
   }
 
   return;
 }
 
-bool ULoadoutComponent::EquipWeapon(const int32 FromSlot, USceneComponent *AttachTo, const FName AttachBoneName)
+bool ULoadoutComponent::EquipWeapon(const int32 FromSlot, USceneComponent *AttachTo, FName AttachBoneName)
 {
   if (!Slots.Contains(FromSlot))
   {
@@ -66,7 +66,7 @@ void ULoadoutComponent::HideWeapon()
   ActiveWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
   if (!attachmentSlots.IsEmpty())
-    AssignToSlot(activeSlot, ActiveWeapon, attachmentSlots[activeSlot], NAME_None);
+    AssignToSlot(activeSlot, ActiveWeapon, attachmentSlots[activeSlot]);
 
   ActiveWeapon = NULL;
   activeSlot = -1;
