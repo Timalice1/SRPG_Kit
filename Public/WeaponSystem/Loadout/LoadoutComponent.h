@@ -6,6 +6,9 @@
 #include "Logging/MessageLog.h"
 #include "LoadoutComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSetActiveWeaponEvent, class ABaseWeapon *, ActiveWeapon);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHideWeaponEvent);
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class SRPG_KIT_API ULoadoutComponent : public UActorComponent
 {
@@ -21,6 +24,14 @@ class SRPG_KIT_API ULoadoutComponent : public UActorComponent
 
 public:
   ULoadoutComponent();
+
+  /*Calls when equip a weapon*/
+  UPROPERTY(BlueprintAssignable, BlueprintCallable)
+  FOnSetActiveWeaponEvent OnSetActiveWeapon;
+
+  /*Calls when unequip / drop active weapon*/
+  UPROPERTY(BlueprintAssignable, BlueprintCallable)
+  FOnHideWeaponEvent OnHideWeapon;
 
 protected:
   /*Current weapon that character holds*/

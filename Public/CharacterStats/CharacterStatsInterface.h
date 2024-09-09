@@ -15,7 +15,6 @@ class SRPG_KIT_API ICharacterStatsInterface
 	GENERATED_BODY()
 
 public:
-
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Health")
 	void Heal(float Amount);
 
@@ -30,7 +29,4 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Stamina")
 	float GetStaminaPercent() const;
-
-
-
 };

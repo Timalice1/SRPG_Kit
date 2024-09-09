@@ -4,7 +4,6 @@
 #include <GameFramework/ProjectileMovementComponent.h>
 #include <Components/StaticMeshComponent.h>
 #include <DrawDebugHelpers.h>
-#include "Kismet/GameplayStatics.h"
 #include <Particles/ParticleSystemComponent.h>
 #include "WeaponSystem/CombatInterface.h"
 #include "DamageableInterface.h"
@@ -174,6 +173,10 @@ void AFireWeapon::Fire()
 	// Check if not out of ammo
 	if (CurrentAmmo == 0)
 	{
+
+		this->PlaySound(Dry_Sound, GetActorLocation());
+
+		bReadyToShoot = true;
 		GetWorld()->GetTimerManager().ClearTimer(FireTimer);
 		return;
 	}
@@ -190,10 +193,11 @@ void AFireWeapon::Fire()
 		for (int i = 0; i < PelletsPerShoot; i++)
 		{
 			/*Define bullet throw direction*/
-			if (CharacterOwner != nullptr)
+			TObjectPtr<AActor> _owner = Execute_GetOwningCharacter(this);
+			if (_owner != nullptr)
 			{
-				if (CharacterOwner->GetClass()->ImplementsInterface(UCombatInterface::StaticClass()))
-					Direction = ICombatInterface::Execute_GetAttackDirection(CharacterOwner, AttackRange, AttackRadius);
+				if (_owner->GetClass()->ImplementsInterface(UCombatInterface::StaticClass()))
+					Direction = ICombatInterface::Execute_GetAttackDirection(_owner, AttackRange, AttackRadius);
 			}
 			else
 				logger.Error(FText::FromString(FString::Printf(TEXT("%s: Character owner is nullptr"), *GetName())));
@@ -205,14 +209,13 @@ void AFireWeapon::Fire()
 			AProjectile *bullet = GetWorld()->SpawnActor<AProjectile>(Projectile, muzzleLocation, muzzleRotation);
 			bullet->SetReboundProbability(ReboundProbability);
 			bullet->SetDamageAmount(BaseDamage);
-			bullet->Throw(unitDirection * Strenght, CharacterOwner);
+			bullet->Throw(unitDirection * Strenght, _owner);
 		}
 	}
 
 	if (!bInfiniteBullets && CurrentAmmo > 0)
 		CurrentAmmo = FMath::Max(0, CurrentAmmo - 1);
 
-	GEngine->AddOnScreenDebugMessage(0, 1.f, FColor::Blue, FString::Printf(TEXT("Bullets left: %d"), CurrentAmmo));
 	/*Activate muzzle flash component*/
 	if (MuzzleFlash != nullptr)
 		MuzzleFlash->Activate(true);
@@ -220,8 +223,7 @@ void AFireWeapon::Fire()
 	if (ShellEject_System != nullptr)
 		ShellEject_System->Activate(true);
 
-	if (Shoot_Sound != nullptr)
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Shoot_Sound, GetActorLocation());
+	this->PlaySound(Shoot_Sound, GetActorLocation());
 
 	AFireWeapon::Recoil();
 	/*Reset weapon for a new shoot after some delay*/
@@ -235,7 +237,6 @@ void AFireWeapon::Fire()
 void AFireWeapon::ResetShoot()
 {
 	bReadyToShoot = true;
-	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "Reset");
 	GetWorld()->GetTimerManager().ClearTimer(ResetTimer);
 }
 
@@ -253,9 +254,11 @@ void AFireWeapon::Recoil()
 	// Add some recoil rotation to character controller by pitch and yae axis
 	float randPitch = -(UKismetMathLibrary::RandomFloatInRange(RecoilPitchMin, RecoilPitchMax));
 	float randYaw = UKismetMathLibrary::RandomFloatInRange(RecoilYawMin, RecoilYawMax);
-	if (CharacterOwner != nullptr)
+
+	TObjectPtr<AActor> _owner = Execute_GetOwningCharacter(this);
+	if (_owner != nullptr)
 	{
-		auto character = Cast<ACharacter>(CharacterOwner);
+		auto character = Cast<ACharacter>(_owner);
 		if (character != nullptr)
 		{
 			character->AddControllerPitchInput(randPitch * GetWorld()->GetDeltaSeconds());
@@ -305,8 +308,8 @@ void AFireWeapon::TranslateMesh()
 
 void AFireWeapon::ReloadStart_Implementation()
 {
-	GEngine->AddOnScreenDebugMessage(0, 1, FColor::Green, FString::Printf(TEXT("ReloadStart")));
 	isReloading = true;
+	this->PlaySound(Reload_Sound, GetActorLocation());
 }
 
 void AFireWeapon::ReloadEnd_Implementation(bool IsInterrupted)

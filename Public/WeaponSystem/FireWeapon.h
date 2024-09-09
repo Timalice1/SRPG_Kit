@@ -6,6 +6,7 @@
 #include "FireWeaponInterface.h"
 #include "CombatInterface.h"
 #include "Logging/MessageLog.h"
+#include "Kismet/GameplayStatics.h"
 #include "FireWeapon.generated.h"
 
 class AProjectile;
@@ -169,12 +170,6 @@ public:
 	UFUNCTION()
 	void Tick(float DeltaSeconds) override;
 
-	UFUNCTION()
-	void OnBulletDamage()
-	{
-		GEngine->AddOnScreenDebugMessage(0, 2, FColor::Blue, FString::Printf(TEXT("Bullet is damaged some character")));
-	};
-
 protected:
 	void Attack_Implementation() override;
 
@@ -227,6 +222,14 @@ protected:
 	{
 		return CurrentAmmo;
 	};
+
+	UFUNCTION()
+	void PlaySound(USoundBase *Sound, FVector Location)
+	{
+		auto world = GetWorld();
+		if (world != nullptr && Sound != nullptr)
+			UGameplayStatics::SpawnSoundAtLocation(GetWorld(), Sound, Location);
+	}
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterDamaged);

@@ -5,6 +5,7 @@
 #include "CharacterStatsComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterDeadEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHealthChangedEvent);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class SRPG_KIT_API UCharacterStatsComponent : public UActorComponent
@@ -34,10 +35,14 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Damage")
 	bool bStuned;
 
-	/*Component events*/
-protected:
+public:
+	/*Calls on character dead*/
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnCharacterDeadEvent OnCharacterDead;
+
+	/*Calls whenewer character health is changed (increased or decreased)*/
+	UPROPERTY(BlueprintCallable, BlueprintAssignable)
+	FOnHealthChangedEvent OnHealtChanged;
 
 protected:
 	UFUNCTION()
@@ -73,4 +78,7 @@ protected:
 	{
 		return GetHealthPercent() < CriticalHealthThressholdPercent;
 	};
+
+	UFUNCTION(BlueprintCallable, Category = "Health|Damageable")
+	float CalculateDamage(const float BaseDamage, FHitResult HitResult);
 };

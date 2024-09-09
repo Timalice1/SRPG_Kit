@@ -54,22 +54,33 @@ bool ULoadoutComponent::EquipWeapon(const int32 FromSlot, USceneComponent *Attac
     HideWeapon();
 
   ActiveWeapon = Slots[FromSlot];
+  ActiveWeapon->SetOwnerActor(GetOwner());
+
   activeSlot = FromSlot;
   if (AttachTo != nullptr)
     ActiveWeapon->AttachToComponent(AttachTo, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachBoneName);
+
+  OnSetActiveWeapon.Broadcast(ActiveWeapon);
 
   return true;
 }
 
 void ULoadoutComponent::HideWeapon()
 {
+  if (ActiveWeapon == nullptr)
+    return;
+
   ActiveWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
   if (!attachmentSlots.IsEmpty())
     AssignToSlot(activeSlot, ActiveWeapon, attachmentSlots[activeSlot]);
 
-  ActiveWeapon = NULL;
+  ActiveWeapon->SetOwnerActor(nullptr);
+  ActiveWeapon = nullptr;
   activeSlot = -1;
+
+  OnHideWeapon.Broadcast();
+
   return;
 }
 
@@ -78,8 +89,12 @@ bool ULoadoutComponent::DropWeapon()
   if (ActiveWeapon != NULL && ActiveWeapon->GetClass()->ImplementsInterface(UWeaponInterface::StaticClass()) && activeSlot != -1)
   {
     IWeaponInterface::Execute_Drop(ActiveWeapon);
+    ActiveWeapon->SetOwnerActor(nullptr);
     ActiveWeapon = nullptr;
     Slots.Emplace(activeSlot);
+
+    OnHideWeapon.Broadcast();
+
     return true;
   }
 

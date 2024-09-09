@@ -22,14 +22,14 @@ class SRPG_KIT_API ABaseWeapon : public ABaseItem, public IWeaponInterface
 {
 	GENERATED_BODY()
 
+	TObjectPtr<AActor> CharacterOwner;
+
 protected:
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Weapon")
 	TEnumAsByte<EWeaponType> WeaponType;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon",
 			  meta = (EditCondition = "WeaponType == EWeaponType::Grenade", EditConditionHides))
 	TObjectPtr<UAnimMontage> Throw_Montage;
-	UPROPERTY(BlueprintReadOnly, meta = (ExposeOnSpawn = true))
-	TObjectPtr<AActor> CharacterOwner;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Weapon", meta = (ClampMin = 1, ClampMax = 100))
 	float BaseDamage;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Weapon")
@@ -41,6 +41,12 @@ protected:
 
 public:
 	ABaseWeapon();
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void SetOwnerActor(AActor *NewOwner)
+	{
+		CharacterOwner = NewOwner;
+	}
 
 	UFUNCTION(BlueprintCallable)
 	virtual void GetHandsIK_Transform(const USkeletalMeshComponent *CharacterMesh,

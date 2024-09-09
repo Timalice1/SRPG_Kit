@@ -19,8 +19,6 @@ void ABaseWeapon::Drop_Implementation()
 
 	InteractionCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-	Mesh->AddImpulse(CharacterOwner->GetActorForwardVector() * 1000);
-
 	Execute_StopAttack(this);
 
 	SetLifeSpan(300);

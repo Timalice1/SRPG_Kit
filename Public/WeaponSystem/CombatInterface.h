@@ -47,6 +47,9 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "FireWeapon")
 	void ReloadWeapon();
 
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeapon")
+	void EquipWeapon(int32 FromSlot);
+
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Damage|Callback")
 	void OnKillCharacter(class ACharacter *DamagedCharacter);
 

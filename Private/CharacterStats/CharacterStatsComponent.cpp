@@ -25,5 +25,12 @@ bool UCharacterStatsComponent::TakeDamage(float Amount)
 		return false;
 
 	CurrentHealth = FMath::Max(0, CurrentHealth - Amount);
+
+	OnHealtChanged.Broadcast();
 	return true;
+}
+
+float UCharacterStatsComponent::CalculateDamage(const float BaseDAmage, FHitResult HitResult)
+{
+	return 0.f;
 }
