@@ -2,7 +2,7 @@
 
 ULoadoutComponent::ULoadoutComponent()
 {
-  PrimaryComponentTick.bCanEverTick = true;
+  PrimaryComponentTick.bCanEverTick = false;
 }
 
 void ULoadoutComponent::BeginPlay()
@@ -13,6 +13,7 @@ void ULoadoutComponent::BeginPlay()
 
 void ULoadoutComponent::AssignToSlot(const int32 slot, ABaseWeapon *Weapon, USceneComponent *AttachTo)
 {
+#if WITH_EDITOR
   if (Weapon == nullptr)
   {
     logger.Error(FText::FromString(FString::Printf(TEXT("%s: Weapon pin must have a connection, Node: AssignToSlot()"), *(GetOwner()->GetName()))));
@@ -24,19 +25,38 @@ void ULoadoutComponent::AssignToSlot(const int32 slot, ABaseWeapon *Weapon, USce
     logger.Error(FText::FromString(FString::Printf(TEXT("%s: Slot %d is out of bounds of MaxSlots value, node: AssignToSlot"), *(GetOwner()->GetName()), slot)));
     return;
   }
+#endif
 
-  Slots.Emplace(slot, Weapon);
+  auto _weapon = Slots.Emplace(slot, Weapon);
   if (AttachTo != nullptr)
   {
     attachmentSlots.Emplace(slot, AttachTo);
-    Weapon->AttachToComponent(AttachTo, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+    _weapon->AttachToComponent(AttachTo, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
   }
 
   return;
 }
 
+// Add here and to hideWeapon functions UAnimMontage parameters!!! <----
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 bool ULoadoutComponent::EquipWeapon(const int32 FromSlot, USceneComponent *AttachTo, FName AttachBoneName)
 {
+#if WITH_EDITOR
   if (!Slots.Contains(FromSlot))
   {
     logger.Error(FText::FromString(FString::Printf(TEXT("%s: Slot %d is not exists, Node:EquipWeapon()"), *(GetOwner()->GetName()), FromSlot)));
@@ -49,12 +69,19 @@ bool ULoadoutComponent::EquipWeapon(const int32 FromSlot, USceneComponent *Attac
     GEngine->AddOnScreenDebugMessage(0, 1, FColor::Red, FString::Printf(TEXT("Slot %d is empty"), FromSlot));
     return false;
   }
+#endif
 
   if (ActiveWeapon != nullptr)
     HideWeapon();
 
+  // if (ActiveWeapon == Slots[FromSlot])
+  // {
+  //   HideWeapon();
+  //   return true;
+  // }
+
   ActiveWeapon = Slots[FromSlot];
-  ActiveWeapon->SetOwnerActor(GetOwner());
+  ActiveWeapon->SetOwnerActor(Cast<ACharacter>(GetOwner()));
 
   activeSlot = FromSlot;
   if (AttachTo != nullptr)
@@ -72,8 +99,10 @@ void ULoadoutComponent::HideWeapon()
 
   ActiveWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
-  if (!attachmentSlots.IsEmpty())
+  if (!attachmentSlots.IsEmpty() && attachmentSlots.Find(activeSlot))
     AssignToSlot(activeSlot, ActiveWeapon, attachmentSlots[activeSlot]);
+  else 
+    ActiveWeapon->SetActorLocation(FVector(0,0,0)); 
 
   ActiveWeapon->SetOwnerActor(nullptr);
   ActiveWeapon = nullptr;
@@ -97,7 +126,8 @@ bool ULoadoutComponent::DropWeapon()
 
     return true;
   }
-
+#if WITH_EDITOR
   GEngine->AddOnScreenDebugMessage(0, 1, FColor::Red, FString::Printf(TEXT("No active weapon found")));
+#endif
   return false;
 }

@@ -10,11 +10,11 @@ ABaseItem::ABaseItem()
 	InteractionCollision->SetCollisionProfileName("OverlapAllDynamic");
 	RootComponent = InteractionCollision;
 
-	MeshRoot = CreateDefaultSubobject<USceneComponent>("MeshOffset");
-	MeshRoot->AttachToComponent(InteractionCollision, FAttachmentTransformRules::KeepRelativeTransform);
+	RootPoint = CreateDefaultSubobject<USceneComponent>("MeshOffset");
+	RootPoint->AttachToComponent(InteractionCollision, FAttachmentTransformRules::KeepRelativeTransform);
 
 	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemMesh"));
-	Mesh->AttachToComponent(MeshRoot, FAttachmentTransformRules::KeepRelativeTransform);
+	Mesh->AttachToComponent(RootPoint, FAttachmentTransformRules::KeepRelativeTransform);
 	Mesh->SetCollisionProfileName("BlockAllDynamic");
 }
 

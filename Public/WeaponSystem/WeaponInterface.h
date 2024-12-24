@@ -19,8 +19,13 @@ class SRPG_KIT_API IWeaponInterface
 	GENERATED_BODY()
 
 public:
+	/**
+	 * @param Message String with description of problem, if function return false.
+	 * You can switch on string to determine next steps.
+	 * Leave string empty if return state = true
+	 */
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "BaseWeapon")
-	void Attack();
+	void StartAttack();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "BaseWeapon")
 	void StopAttack();
@@ -29,8 +34,10 @@ public:
 	void Drop();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "BaseWeapon")
-	float GetAimingCameraOffset() const;
+	FVector GetAimingCameraOffset() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "BaseWeapon")
-	AActor *GetOwningCharacter() const;
+	ACharacter *GetOwningCharacter() const;
+
+	virtual void GetWeaponProperties(struct FBaseWeaponProperties& properties) = 0;
 };

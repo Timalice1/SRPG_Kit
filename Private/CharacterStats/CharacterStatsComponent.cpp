@@ -4,7 +4,7 @@
 
 UCharacterStatsComponent::UCharacterStatsComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
 	bIsAlive = true;
 
@@ -15,6 +15,7 @@ UCharacterStatsComponent::UCharacterStatsComponent()
 
 void UCharacterStatsComponent::BeginPlay()
 {
+	Super::BeginPlay();
 	CurrentHealth = MaxHeath;
 }
 
@@ -30,7 +31,12 @@ bool UCharacterStatsComponent::TakeDamage(float Amount)
 	return true;
 }
 
-float UCharacterStatsComponent::CalculateDamage(const float BaseDAmage, FHitResult HitResult)
+float UCharacterStatsComponent::CalculateDamage(const float BaseDAmage, FHitResult HitResult) 
 {
 	return 0.f;
+}
+
+void UCharacterStatsComponent::Heal(float Amount)
+{
+	CurrentHealth = FMath::Clamp(CurrentHealth+Amount, 0, MaxHeath);
 }

@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "../BaseWeapon.h"
 #include "Logging/MessageLog.h"
+#include "../CombatInterface.h"
 #include "LoadoutComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSetActiveWeaponEvent, class ABaseWeapon *, ActiveWeapon);

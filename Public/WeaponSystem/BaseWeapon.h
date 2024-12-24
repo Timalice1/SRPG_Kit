@@ -4,76 +4,69 @@
 #include "BaseItem.h"
 #include "GameFramework/Character.h"
 #include "WeaponInterface.h"
+#include "Data/BaseWeaponProperties.h"
 #include "BaseWeapon.generated.h"
 
-class UAnimMontage;
+#if WITH_EDITOR
+DECLARE_LOG_CATEGORY_EXTERN(WeaponLog, Log, All);
+#endif
 
-UENUM(BlueprintType)
-enum EWeaponType
-{
-	Rifle,
-	Pistol,
-	Grenade,
-	Melle,
-};
+class UAnimMontage;
 
 UCLASS()
 class SRPG_KIT_API ABaseWeapon : public ABaseItem, public IWeaponInterface
 {
 	GENERATED_BODY()
 
-	TObjectPtr<AActor> CharacterOwner;
+protected:
+	TObjectPtr<ACharacter> _characterOwner;
 
 protected:
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Weapon")
-	TEnumAsByte<EWeaponType> WeaponType;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon",
-			  meta = (EditCondition = "WeaponType == EWeaponType::Grenade", EditConditionHides))
-	TObjectPtr<UAnimMontage> Throw_Montage;
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Weapon", meta = (ClampMin = 1, ClampMax = 100))
-	float BaseDamage;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Weapon")
-	float AttackRange;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Weapon")
-	float AttackRadius;
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
-	float AimingCameraOffset;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	FDataTableRowHandle WeaponPropertiesRow;
+
+	FBaseWeaponProperties *_weaponProperties;
 
 public:
 	ABaseWeapon();
 
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void SetOwnerActor(AActor *NewOwner)
-	{
-		CharacterOwner = NewOwner;
-	}
+	virtual void BeginPlay() override;
+
+	virtual void SetOwnerActor(ACharacter *NewOwner) { _characterOwner = NewOwner; }
 
 	UFUNCTION(BlueprintCallable)
 	virtual void GetHandsIK_Transform(const USkeletalMeshComponent *CharacterMesh,
 									  FTransform &RightHandTransform,
 									  FTransform &LeftHandTransform) const {};
 
-	void Attack_Implementation() override {};
-
-	void StopAttack_Implementation() override {};
-
 	void Drop_Implementation() override;
 
 	UFUNCTION()
-	float GetAimingCameraOffset_Implementation() const override
+	FVector GetAimingCameraOffset_Implementation() const override
 	{
-		return AimingCameraOffset;
+		if (_weaponProperties)
+			return _weaponProperties->AimingCameraOffset;
+		return FVector(0, 0, 0);
 	};
 
 	UFUNCTION()
-	AActor *GetOwningCharacter_Implementation() const override
+	ACharacter *GetOwningCharacter_Implementation() const override
 	{
-		return CharacterOwner;
+		return _characterOwner;
 	};
 
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	TEnumAsByte<EWeaponType> GetWeaponType() const
 	{
-		return WeaponType;
+		if (_weaponProperties)
+			return _weaponProperties->WeaponType;
+		return EWeaponType::EWT_Rifle;
+	};
+
+protected:
+	UFUNCTION(BlueprintCallable, Category = BaseWeapon)
+	virtual void GetWeaponProperties(struct FBaseWeaponProperties &properties) override
+	{
+		properties = *_weaponProperties;
 	};
 };

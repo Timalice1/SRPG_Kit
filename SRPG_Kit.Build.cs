@@ -7,7 +7,6 @@ public class SRPG_Kit : ModuleRules
 	public SRPG_Kit(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
 		PublicIncludePaths.AddRange(
 			new string[] {
 				// ... add public include paths required here ...
@@ -25,7 +24,7 @@ public class SRPG_Kit : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core", "Niagara",
+				"Core", "Niagara", "AIModule"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

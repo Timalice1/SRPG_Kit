@@ -1,17 +1,17 @@
 #include "WeaponSystem/ExplosiveComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Kismet/KismetMathLibrary.h"
-#include <DamageableInterface.h>
-#include <Kismet/GameplayStatics.h>
 #include "Particles/ParticleSystem.h"
-#include <Components/BoxComponent.h>
-#include "WeaponSystem/WeaponInterface.h"
-#include "GameFramework/Character.h"
+#include "Kismet/KismetMathLibrary.h"
+#include <Kismet/GameplayStatics.h>
+#include <DamageableInterface.h>
 #include "GameFramework/Actor.h"
+#include "Perception/AISense_Hearing.h"
+#include "DrawDebugHelpers.h"
+#include "Sound/SoundCue.h"
 
 UExplosiveComponent::UExplosiveComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
 	ExplosionDelay = .01f;
 	ExplosionRadius = 750.f;
@@ -21,12 +21,14 @@ UExplosiveComponent::UExplosiveComponent()
 	ExplosionEmmiterScale = 1.f;
 }
 
-void UExplosiveComponent::Explode(float Damage)
+void UExplosiveComponent::Explode(float Damage, class AActor *DamageCauser)
 {
-
 	world = GetWorld();
 
 	ExplosionDamage = Damage == 0 ? ExplosionDamage : Damage;
+	damageInstigator = GetOwner();
+	if (DamageCauser != nullptr)
+		damageInstigator = DamageCauser;
 
 	FTimerHandle explodeDelay;
 	GetWorld()->GetTimerManager().SetTimer(explodeDelay, this, &UExplosiveComponent::Explode_Implementation, ExplosionDelay, false);
@@ -68,15 +70,14 @@ void UExplosiveComponent::Explode_Implementation()
 		for (const auto &actor : actors)
 		{
 			// If actor implements damageable interface, apply explosion damage to this actor
-			if (actor->Implements<UDamageableInterface>())
+			if (actor->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()) && actor != GetOwner())
 			{
-				AActor *DamageCauser = GetOwner();
-				// Check if owner actor of this component is weapon. Get owning character if its true as damage causer
-				// By default damage causer is owning actor himself
-				if (GetOwner()->GetClass()->ImplementsInterface(UWeaponInterface::StaticClass()))
-					DamageCauser = IWeaponInterface::Execute_GetOwningCharacter(GetOwner());
-
-				IDamageableInterface::Execute_TakeDamage(actor, ExplosionDamage, nullHit, EDamageType::ExplosionDamage, DamageCauser);
+				IDamageableInterface::Execute_TakeDamage(
+					actor,
+					ExplosionDamage,
+					nullHit,
+					EDamageType::ExplosionDamage,
+					damageInstigator);
 			}
 
 			// Othervise apply impusle to all other objects
@@ -104,10 +105,21 @@ void UExplosiveComponent::Explode_Implementation()
 			UGameplayStatics::SpawnEmitterAtLocation(world, ExplosionEmmiter, emmiterTransform);
 		}
 
+		UAISense_Hearing::ReportNoiseEvent(GetWorld(), epicenter, 1, GetOwner(), ExplosionNoiseRange, TEXT("Explosion"));
+		if(ExplosionSound)
+			UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ExplosionSound, epicenter);
+
 		if (ExplosionCameraShake_Class != nullptr)
 			UGameplayStatics::PlayWorldCameraShake(world, ExplosionCameraShake_Class, epicenter, ExplosionRadius * 1.5f, ExplosionRadius);
 	}
 
-	// Destroy this actor after explosion
+	GetOwner()->SetActorHiddenInGame(true);
+
+	FTimerHandle _delay;
+	GetWorld()->GetTimerManager().SetTimer(_delay, this, &ThisClass::DestroyOwner, DestroyTime, false);
+}
+
+void UExplosiveComponent::DestroyOwner()
+{
 	GetOwner()->Destroy();
 }

@@ -7,6 +7,7 @@
 #include "CombatInterface.h"
 #include "Logging/MessageLog.h"
 #include "Kismet/GameplayStatics.h"
+#include "Data/FireWeaponProperties.h"
 #include "FireWeapon.generated.h"
 
 class AProjectile;
@@ -23,178 +24,126 @@ enum EFireMode
 	EFM_FullAuto
 };
 
+/**Needs to be called whenewer one shoot is finished
+ * to, f.ex. play animation on revolver or rifles
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FResetShootEvent);
+
 UCLASS()
 class SRPG_KIT_API AFireWeapon : public ABaseWeapon, public IFireWeaponInterface
 {
 	GENERATED_BODY()
 
-	FMessageLog logger = FMessageLog(FName("PIE"));
-
-#pragma region Fire weapon properties
-protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Components")
-	TObjectPtr<USceneComponent> AimPoint;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Components")
-	TObjectPtr<USceneComponent> LeftHand;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Components")
-	TObjectPtr<USceneComponent> RightHand;
-
-	// Debuggind properties
-	UPROPERTY(EditAnywhere, Category = "DEBUG")
-	bool bInfiniteBullets;
-
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon",
-			  meta = (ClampMin = 0))
-	int MagazineSize;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon",
-			  meta = (ClampMin = 1))
-	int PelletsPerShoot;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon",
-			  meta = (ClampMin = 0))
-	float MaxSpread;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon")
-	bool bAllowAutoFire = true;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon",
-			  meta = (ClampMin = 0, ClampMax = 1))
-	float ReboundProbability;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon")
-	TSubclassOf<AProjectile> Projectile;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon")
-	float FireRate;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon")
-	float Strenght;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon|Recoil")
-	class UCurveVector *RecoilRotation_Curve = nullptr;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon|Recoil")
-	class UCurveVector *RecoilTranslation_Curve = nullptr;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon|Recoil",
-			  meta = (ClampMin = "0"))
-	float RecoilTranslation_Scale;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon|Recoil",
-			  meta = (ClampMin = "0"))
-	float RecoilRotation_Scale;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon|Recoil")
-	float RecoilRecoverInterpSpeed;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon|Recoil")
-	float RecoilYawMin;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon|Recoil")
-	float RecoilYawMax;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon|Recoil",
-			  meta = (ClampMin = 0.f))
-	float RecoilPitchMin;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon|Recoil",
-			  meta = (ClampMin = 0.f))
-	float RecoilPitchMax;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon|Recoil")
-	TSubclassOf<UCameraShakeBase> RecoilCameraShake_Class;
-	UPROPERTY(BlueprintReadWrite, Category = "Debug")
-	bool bToogleCameraShake = true;
-
-	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon|ADS")
-	bool bCanADS = true;
-	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon|ADS",
-			  meta = (EditCondition = "bCanADS", EditConditionHides))
-	float ADS_TurnRate;
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "FireWeapon")
-	FVector FP_CameraOffset = FVector(0, 0, 5.f);
-
-	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon")
-	TObjectPtr<UStaticMesh> MagazineMesh = nullptr;
-
-	UFUNCTION()
-	TArray<FName> GetBoneNames() const
-	{
-		return Mesh->GetAllSocketNames();
-	}
-	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon", meta = (GetOptions = "GetBoneNames"))
-	FName MagazineBoneName;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Components")
-	TObjectPtr<UParticleSystemComponent> MuzzleFlash;
-	UPROPERTY(EditDefaultsOnly, Category = "Components")
-	TObjectPtr<UNiagaraComponent> ShellEject_System;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FireWeapon|Animations")
-	TObjectPtr<UAnimMontage> Reload_Montage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon|Sounds")
-	TObjectPtr<USoundCue> Shoot_Sound;
-	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon|Sounds")
-	TObjectPtr<USoundCue> Dry_Sound;
-	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon|Sounds")
-	TObjectPtr<USoundCue> Reload_Sound;
-
-#pragma endregion FireWeaponProperties
-
-#pragma region For internal use
 private:
-	/*Timer handler for burst/auto fire modes*/
-	FTimerHandle FireTimer;
-	/*Timer handler for shooting reset*/
-	FTimerHandle ResetTimer;
-	bool isReloading = false;
+	FMessageLog logger = FMessageLog(FName("PIE"));
+	FFireWeaponFroperties *_weaponProperties;
+
+	/*Ammo that left*/
+	int32 CurrentAmmo;
+
+	float _fireRate = 0;
+
 	TEnumAsByte<EFireMode> FireMode = EFM_FullAuto;
-	/*Uses for storing default weapon mesh translation value for recoil*/
-	FVector DefaultTranslation;
-	/*Uses for storing default weapon mesh rotator value for recoil*/
-	FRotator DefaultRotation;
+
 	/*Timelines for weapon recoil*/
 	FTimeline RecoilRotaion_Timeline;
 	FTimeline RecoilTranslation_Timeline;
+
 	/*Check if weapon is ready to fire new projectile*/
 	bool bReadyToShoot = true;
+	bool bReseted = true;
+	bool isReloading = false;
+
+	/** Anim instance reference from mesh */
 	class UAnimInstance *AnimBP = NULL;
-
-private:
-	/*Reset a weapon from last shoot*/
-	void ResetShoot();
-	/*Move and rotate weapon mesh with arms, connected with weapon by IK*/
-	void Recoil();
-
-protected:
-	int CurrentAmmo;
-	UFUNCTION()
-	void RotateMesh();
-	UFUNCTION()
-	void TranslateMesh();
-	UFUNCTION()
-	void Fire();
-
-#pragma endregion
 
 public:
 	AFireWeapon();
 
-	UFUNCTION()
-	void BeginPlay() override;
+	virtual void BeginPlay() override;
 
 	UFUNCTION()
-	void Tick(float DeltaSeconds) override;
+	virtual void Tick(float DeltaSeconds) override;
 
-protected:
-	void Attack_Implementation() override;
+private:
+	virtual void Fire();
+
+	virtual void ResetShoot() { bReadyToShoot = true; };
+
+	/*Move and rotate weapon mesh with arms, connected with weapon by IK*/
+	UFUNCTION()
+	virtual void Recoil();
+	UFUNCTION()
+	virtual void RotateMesh();
+	UFUNCTION()
+	virtual void TranslateMesh();
+
+	/*Handle weapon mesh are blocked by obstacle*/
+	virtual void CheckBlocking();
+
+	virtual void PlaySound(USoundBase *Sound, FVector Location)
+	{
+		auto world = GetWorld();
+		if (world != nullptr && Sound != nullptr)
+			UGameplayStatics::SpawnSoundAtLocation(GetWorld(), Sound, Location);
+	}
+
+	virtual void InterpPivotPointTransform(FVector NewTranslation, FRotator NewRotation);
+
+protected: // properties
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = Components)
+	TObjectPtr<USceneComponent> AimPoint;
+	UPROPERTY(EditDefaultsOnly, Category = Components)
+	TObjectPtr<USceneComponent> BlockPoint;
+	UPROPERTY(EditDefaultsOnly, Category = Components)
+	TObjectPtr<USceneComponent> LeftHand;
+	UPROPERTY(EditDefaultsOnly, Category = Components)
+	TObjectPtr<USceneComponent> RightHand;
+
+	UPROPERTY(EditDefaultsOnly, Category = Components)
+	TObjectPtr<USceneComponent> WallBlockPivot;
+
+	UPROPERTY(EditDefaultsOnly, Category = Components)
+	TObjectPtr<UParticleSystemComponent> MuzzleFlash;
+	UPROPERTY(EditDefaultsOnly, Category = Components)
+	TObjectPtr<UNiagaraComponent> ShellEject_System;
+
+	UPROPERTY(EditDefaultsOnly, Category = FireWeapon)
+	TSubclassOf<AProjectile> Projectile;
+
+	// Debuggind properties
+	UPROPERTY(EditAnywhere, Category = "FireWeapon|Debug")
+	bool bInfiniteBullets;
+
+	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon|WallBlock")
+	bool _bDrawDebug = false;
+
+public:
+	UPROPERTY(BlueprintReadWrite, Category = "FireWeapon|WallBlock")
+	bool bCheckWallBlock = false;
+	UPROPERTY(BlueprintReadOnly, Category = "FireWeapon|WallBlock")
+	bool bBlocked = false;
+
+protected: // Weapon interface implementation
+	void StartAttack_Implementation() override;
 
 	void StopAttack_Implementation() override;
 
-	FVector GetBulletSpread_Implementation() const override;
 
-	FVector GetAimPointLocation_Implementation() const override
-	{
-		return AimPoint->GetComponentLocation();
-	};
+	FVector GetAimPointLocation_Implementation() const override { return AimPoint->GetComponentLocation(); };
 
-	bool CanADS_Implementation() const override
-	{
-		return bCanADS;
-	};
+	FRotator GetAimPointRotation_Implementation() const override { return AimPoint->GetComponentRotation(); }
 
-	float GetADS_TurnRate_Implementation() const override
-	{
-		return ADS_TurnRate;
-	};
+	bool CanADS_Implementation() const override { return _weaponProperties && _weaponProperties->bCanADS; };
+
+	virtual bool IsBlocked_Implementation() const override { return bBlocked; }
+
+	float GetADS_TurnRate_Implementation() const override { return _weaponProperties ? _weaponProperties->ADS_TurnRate : 1; };
 
 	void GetHandsIK_Transform(const USkeletalMeshComponent *CharacterMesh,
 							  FTransform &RightHandTransform,
 							  FTransform &LeftHandTransform) const override;
+
 
 	void ReloadStart_Implementation() override;
 
@@ -202,44 +151,28 @@ protected:
 
 	bool CanBeReloaded_Implementation() const override
 	{
-		// Also add check for required ammo type in inventory
-		return (!isReloading && CurrentAmmo < MagazineSize);
+		if (_weaponProperties)
+			return (!isReloading && CurrentAmmo < _weaponProperties->MagazineSize);
+		return false;
 	};
 
-	UStaticMesh *GetMagazineMesh_Implementation() const override
-	{
-		return MagazineMesh;
-	};
+	int32 GetCurrentAmmo_Implementation() const override { return CurrentAmmo; };
 
-	FName GetMagazineBoneName_Implementation() const override
-	{
-		FName name = "None";
-		name = MagazineBoneName;
-		return name;
-	};
+	float GetCurrentAmmoPercent_Implementation() override { return _weaponProperties ? static_cast<float>(CurrentAmmo) / static_cast<float>(_weaponProperties->MagazineSize) : 0; };
 
-	int32 GetCurrentAmmo_Implementation() const override
-	{
-		return CurrentAmmo;
-	};
+	UAnimMontage *GetReloadMontage_Implementation() override { return _weaponProperties->Reload_Montage; };
 
-	UFUNCTION()
-	void PlaySound(USoundBase *Sound, FVector Location)
-	{
-		auto world = GetWorld();
-		if (world != nullptr && Sound != nullptr)
-			UGameplayStatics::SpawnSoundAtLocation(GetWorld(), Sound, Location);
-	}
+	FVector GetBulletSpread() const override;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterDamaged);
 
-UCLASS()
-class SRPG_KIT_API AProjectile : public AActor
+UCLASS(MinimalAPI)
+class AProjectile : public AActor
 {
-
 	GENERATED_BODY()
 
+private:
 	float Rebound = 0;
 	float Damage = 10.f;
 
@@ -255,8 +188,8 @@ protected:
 	class UParticleSystemComponent *Tracer;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile", meta = (ClampMin = 1.f))
 	float ProjectileDamageMultiplyer;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile", meta = (ClampMin = "0", ClampMax = "1"))
-	float ImpulseModifier = .1f;
+	
+	float Impulse = 1.f;
 
 public:
 	/*Calls whenewer bullet is damage a character*/
@@ -264,9 +197,15 @@ public:
 
 	AProjectile();
 
-	void BeginPlay() override;
+	virtual void BeginPlay() override;
 
-	void Throw(const FVector Direction, class AActor *DamageCauser);
+	virtual void Throw(const FVector Direction, class ACharacter *DamageCauser);
+
+	virtual void SetReboundProbability(float Value) { this->Rebound = Value; }
+
+	virtual void SetDamageAmount(float Amount) { this->Damage = Amount; }
+
+	virtual void SetImpulse(float Value) { this->Impulse = Value; };
 
 	UFUNCTION()
 	void HitEvent(UPrimitiveComponent *HitComponent,
@@ -274,14 +213,4 @@ public:
 				  UPrimitiveComponent *OtherComp,
 				  FVector NormalImpulse,
 				  const FHitResult &Hit);
-
-public:
-	void SetReboundProbability(float Value)
-	{
-		this->Rebound = Value;
-	}
-	void SetDamageAmount(float Amount)
-	{
-		this->Damage = Amount;
-	}
 };

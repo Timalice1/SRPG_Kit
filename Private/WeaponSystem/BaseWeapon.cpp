@@ -1,17 +1,28 @@
 #include "WeaponSystem/BaseWeapon.h"
 #include "Components/SphereComponent.h"
 
+DEFINE_LOG_CATEGORY(WeaponLog);
+
 ABaseWeapon::ABaseWeapon()
 {
-	AttackRange = 10000.f;
-	AttackRadius = .1f;
-	BaseDamage = 1.f;
+}
 
-	AimingCameraOffset = -70.f;
+void ABaseWeapon::BeginPlay()
+{
+	if(WeaponPropertiesRow.IsNull())
+	{
+		UE_LOG(WeaponLog, Error, TEXT("[%s]: table row is null"), *GetName());
+		Super::BeginPlay();
+		return;
+	}
+	_weaponProperties = WeaponPropertiesRow.GetRow<FBaseWeaponProperties>(FString());
+
+	Super::BeginPlay();
 }
 
 void ABaseWeapon::Drop_Implementation()
 {
+
 	this->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
 	Mesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
@@ -21,5 +32,5 @@ void ABaseWeapon::Drop_Implementation()
 
 	Execute_StopAttack(this);
 
-	SetLifeSpan(300);
+	SetLifeSpan(120);
 }

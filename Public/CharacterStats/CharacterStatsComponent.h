@@ -45,39 +45,41 @@ public:
 	FOnHealthChangedEvent OnHealtChanged;
 
 protected:
-	UFUNCTION()
-	void BeginPlay() override;
+	virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Health")
+	UFUNCTION(BlueprintCallable, Category = "CharacterStats|Health")
 	bool GetIsAlive() const
 	{
 		return bIsAlive;
 	}
 
-	UFUNCTION(BlueprintCallable, Category = "Heath")
+	UFUNCTION(BlueprintCallable, Category = "CharacterStats|Health")
 	void SetIsAlive(bool IsAlive)
 	{
 		bIsAlive = IsAlive;
 	}
 
-	UFUNCTION(BlueprintCallable, Category = "Health")
+	UFUNCTION(BlueprintCallable, Category = "CharacterStats|Health")
 	float GetCurrentHealth() const
 	{
 		return CurrentHealth;
 	}
-	UFUNCTION(BlueprintCallable, Category = "Health")
+	UFUNCTION(BlueprintCallable, Category = "CharacterStats|Health")
 	float GetHealthPercent() const
 	{
 		return CurrentHealth / MaxHeath;
 	}
-	UFUNCTION(BlueprintCallable, Category = "Health")
+	UFUNCTION(BlueprintCallable, Category = "CharacterStats|Health")
 	bool TakeDamage(float Amount);
 	/*Check if character current HP is under critical thresshold*/
-	UFUNCTION(BlueprintCallable, Category = "Health")
+	UFUNCTION(BlueprintCallable, Category = "CharacterStats|Health")
 	bool IsCriticalHealth() const
 	{
 		return GetHealthPercent() < CriticalHealthThressholdPercent;
 	};
+
+	UFUNCTION(BlueprintCallable, Category = "CharacterStats|Health")
+	void Heal(float Amount); 
 
 	UFUNCTION(BlueprintCallable, Category = "Health|Damageable")
 	float CalculateDamage(const float BaseDamage, FHitResult HitResult);

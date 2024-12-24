@@ -19,12 +19,16 @@ public:
 	void Tick(float DeltaSeconds) override;
 
 protected:
+
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<USceneComponent> MeshRoot;
+	TObjectPtr<USceneComponent> RootPoint;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> InteractionCollision;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Components")
 	TObjectPtr<USkeletalMeshComponent> Mesh;
+
+protected:
 };
