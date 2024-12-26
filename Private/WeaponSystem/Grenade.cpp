@@ -58,7 +58,7 @@ void AGrenade::StopAttack_Implementation()
     _bReseted = true;
 }
 
-void AGrenade::Throw()
+void AGrenade::Launch()
 {
     if (!bCanThrow)
         return;

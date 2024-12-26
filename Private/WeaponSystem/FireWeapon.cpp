@@ -242,7 +242,7 @@ void AFireWeapon::Fire()
 		{
 			/*Define bullet throw direction*/
 			FVector _start = muzzleLocation;
-			FVector _end = (UKismetMathLibrary::GetRightVector(muzzleRotation) * _weaponProperties->AttackRange*100) +
+			FVector _end = (UKismetMathLibrary::GetForwardVector(AimPoint->GetComponentRotation()) * _weaponProperties->AttackRange*100) +
 						   _start;
 			_end += GetBulletSpread();
 
@@ -252,7 +252,7 @@ void AFireWeapon::Fire()
 													EDrawDebugTrace::None, _hit, true);
 
 			FVector _target = _hit.bBlockingHit ? _hit.Location : _hit.TraceEnd;
-			float _len = _hit.Distance;
+			float _len = (_target - _start).Size();
 			float _t = _len/(_weaponProperties->BulletSpeed * 100);
 			float _horizontalVelocity = (_len - (0.5f * (_t * _t) * (UPhysicsSettings::Get()->DefaultGravityZ / 2))) / _t;
 
