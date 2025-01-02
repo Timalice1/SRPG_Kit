@@ -81,7 +81,8 @@ bool ULoadoutComponent::EquipWeapon(const int32 FromSlot, USceneComponent *Attac
   // }
 
   ActiveWeapon = Slots[FromSlot];
-  ActiveWeapon->SetOwnerActor(Cast<ACharacter>(GetOwner()));
+  //ActiveWeapon->SetOwnerCharacter(Cast<ACharacter>(GetOwner()));
+  ActiveWeapon->SetOwner(GetOwner());
 
   activeSlot = FromSlot;
   if (AttachTo != nullptr)
@@ -104,7 +105,7 @@ void ULoadoutComponent::HideWeapon()
   else 
     ActiveWeapon->SetActorLocation(FVector(0,0,0)); 
 
-  ActiveWeapon->SetOwnerActor(nullptr);
+  ActiveWeapon->SetOwner(nullptr);
   ActiveWeapon = nullptr;
   activeSlot = -1;
 
@@ -118,7 +119,7 @@ bool ULoadoutComponent::DropWeapon()
   if (ActiveWeapon != NULL && ActiveWeapon->GetClass()->ImplementsInterface(UWeaponInterface::StaticClass()) && activeSlot != -1)
   {
     IWeaponInterface::Execute_Drop(ActiveWeapon);
-    ActiveWeapon->SetOwnerActor(nullptr);
+    ActiveWeapon->SetOwner(nullptr);
     ActiveWeapon = nullptr;
     Slots.Emplace(activeSlot);
 

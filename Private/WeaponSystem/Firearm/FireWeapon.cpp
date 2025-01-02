@@ -1,4 +1,4 @@
-#include "WeaponSystem/FireWeapon.h"
+#include "WeaponSystem/Firearm/FireWeapon.h"
 #include "Curves/CurveVector.h"
 #include <Kismet/KismetMathLibrary.h>
 #include <GameFramework/ProjectileMovementComponent.h>
@@ -109,7 +109,7 @@ void AFireWeapon::CheckBlocking()
 		FVector _start = GetActorLocation();
 		FVector _end = BlockPoint->GetComponentLocation();
 		TArray<AActor *> _ignore;
-		_ignore.Add(Execute_GetOwningCharacter(this));
+		_ignore.Add(GetOwner());
 
 		UKismetSystemLibrary::SphereTraceSingle(
 			this, _start, _end, _weaponProperties->TraceRadius, UEngineTypes::ConvertToTraceType(ECC_Camera),
@@ -242,7 +242,7 @@ void AFireWeapon::Fire()
 		{
 			/*Define bullet throw direction*/
 			FVector _start = muzzleLocation;
-			FVector _end = (UKismetMathLibrary::GetForwardVector(AimPoint->GetComponentRotation()) * _weaponProperties->AttackRange*100) +
+			FVector _end = (UKismetMathLibrary::GetForwardVector(AimPoint->GetComponentRotation()) * _weaponProperties->AttackRange * 100) +
 						   _start;
 			_end += GetBulletSpread();
 
@@ -253,19 +253,20 @@ void AFireWeapon::Fire()
 
 			FVector _target = _hit.bBlockingHit ? _hit.Location : _hit.TraceEnd;
 			float _len = (_target - _start).Size();
-			float _t = _len/(_weaponProperties->BulletSpeed * 100);
+			float _t = _len / (_weaponProperties->BulletSpeed * 100);
 			float _horizontalVelocity = (_len - (0.5f * (_t * _t) * (UPhysicsSettings::Get()->DefaultGravityZ / 2))) / _t;
 
-			FVector  unitDirection=
+			FVector unitDirection =
 				UKismetMathLibrary::GetDirectionUnitVector(muzzleLocation, _target);
 			unitDirection *= _horizontalVelocity;
 
 			/*Spawn and throw new bullet*/
 			AProjectile *bullet = GetWorld()->SpawnActor<AProjectile>(Projectile, muzzleLocation, muzzleRotation);
-			bullet->SetReboundProbability(_weaponProperties->ReboundProbability);
-			bullet->SetDamageAmount(_weaponProperties->BaseDamage);
-			bullet->SetImpulse(_weaponProperties->BulletHitImpulse);
-			bullet->Throw(unitDirection, Execute_GetOwningCharacter(this));
+			bool _init = bullet->Init(GetOwner(),
+						 _weaponProperties->ReboundProbability,
+						 _weaponProperties->BaseDamage,
+						 _weaponProperties->BulletHitImpulse);
+			if(_init) bullet->Throw(unitDirection);
 		}
 	}
 
@@ -306,7 +307,7 @@ void AFireWeapon::Recoil()
 	float randPitch = -(UKismetMathLibrary::RandomFloatInRange(_weaponProperties->RecoilPitchMin, _weaponProperties->RecoilPitchMax));
 	float randYaw = UKismetMathLibrary::RandomFloatInRange(_weaponProperties->RecoilYawMin, _weaponProperties->RecoilYawMax);
 
-	TObjectPtr<ACharacter> _owner = Execute_GetOwningCharacter(this);
+	TObjectPtr<ACharacter> _owner = Cast<ACharacter>(GetOwner());
 	if (_owner != nullptr)
 	{
 		if (_owner != nullptr)
@@ -388,26 +389,21 @@ AProjectile::AProjectile()
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-
 	if (Tracer != nullptr)
 		Tracer->Activate();
 }
 
-void AProjectile::Throw(const FVector Direction, ACharacter *DamageCauser)
+void AProjectile::Throw(const FVector Direction)
 {
 	ProjectileMovement->Velocity = Direction;
 	ProjectileMesh->OnComponentHit.AddDynamic(this, &AProjectile::HitEvent);
-	this->Attacker = DamageCauser;
 }
 
 void AProjectile::HitEvent(UPrimitiveComponent *HitComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp, FVector NormalImpulse, const FHitResult &Hit)
 {
-
 	/*Apply damage if other actor is damageable*/
-
 	if (OtherActor && OtherActor->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()))
 	{
-
 		/*Make this function return bool in case if we killed character or not instead of damaged*/
 		/*Make Damage causer to be character controller instead or beside character class*/
 		bool damaged = IDamageableInterface::Execute_TakeDamage(
@@ -415,7 +411,7 @@ void AProjectile::HitEvent(UPrimitiveComponent *HitComponent, AActor *OtherActor
 			Damage * ProjectileDamageMultiplyer,
 			Hit,
 			EDamageType::BulletDamage,
-			Attacker);
+			GetOwner());
 	}
 
 	/*Apply impulse to hitted actor*/

@@ -4,10 +4,10 @@
 #include "WeaponSystem/BaseWeapon.h"
 #include "Components/TimelineComponent.h"
 #include "FireWeaponInterface.h"
-#include "CombatInterface.h"
+#include "../CombatInterface.h"
 #include "Logging/MessageLog.h"
 #include "Kismet/GameplayStatics.h"
-#include "Data/FireWeaponProperties.h"
+#include "../Data/FireWeaponProperties.h"
 #include "FireWeapon.generated.h"
 
 class AProjectile;
@@ -129,7 +129,6 @@ protected: // Weapon interface implementation
 
 	void StopAttack_Implementation() override;
 
-
 	FVector GetAimPointLocation_Implementation() const override { return AimPoint->GetComponentLocation(); };
 
 	FRotator GetAimPointRotation_Implementation() const override { return AimPoint->GetComponentRotation(); }
@@ -143,7 +142,6 @@ protected: // Weapon interface implementation
 	void GetHandsIK_Transform(const USkeletalMeshComponent *CharacterMesh,
 							  FTransform &RightHandTransform,
 							  FTransform &LeftHandTransform) const override;
-
 
 	void ReloadStart_Implementation() override;
 
@@ -175,6 +173,7 @@ class AProjectile : public AActor
 private:
 	float Rebound = 0;
 	float Damage = 10.f;
+	float Impulse = 1.f;
 
 	UPROPERTY()
 	TObjectPtr<AActor> Attacker;
@@ -188,8 +187,7 @@ protected:
 	class UParticleSystemComponent *Tracer;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile", meta = (ClampMin = 1.f))
 	float ProjectileDamageMultiplyer;
-	
-	float Impulse = 1.f;
+
 
 public:
 	/*Calls whenewer bullet is damage a character*/
@@ -198,14 +196,18 @@ public:
 	AProjectile();
 
 	virtual void BeginPlay() override;
-
-	virtual void Throw(const FVector Direction, class ACharacter *DamageCauser);
-
-	virtual void SetReboundProbability(float Value) { this->Rebound = Value; }
-
-	virtual void SetDamageAmount(float Amount) { this->Damage = Amount; }
-
-	virtual void SetImpulse(float Value) { this->Impulse = Value; };
+	virtual bool Init(AActor* NewOwner, float ReboundProbability = 0.f, float DamageAmount = 1.f, float HitImpulse = 1.f)
+	{
+		if(!NewOwner)
+			return false;
+		Rebound = ReboundProbability;
+		Damage = DamageAmount;
+		Impulse = HitImpulse;
+		this->SetOwner(NewOwner);
+		return true;
+	};
+	
+	virtual void Throw(const FVector Direction);
 
 	UFUNCTION()
 	void HitEvent(UPrimitiveComponent *HitComponent,
@@ -213,4 +215,7 @@ public:
 				  UPrimitiveComponent *OtherComp,
 				  FVector NormalImpulse,
 				  const FHitResult &Hit);
+
+	UFUNCTION(BlueprintCallable, Category = "FireWeapon|Bullet")
+	AActor *GetInstigatorActor() { return Attacker; }
 };

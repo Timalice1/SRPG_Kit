@@ -36,8 +36,8 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "BaseWeapon")
 	FVector GetAimingCameraOffset() const;
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "BaseWeapon")
-	ACharacter *GetOwningCharacter() const;
+	// UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "BaseWeapon")
+	// ACharacter *GetOwningCharacter() const;
 
 	virtual void GetWeaponProperties(struct FBaseWeaponProperties& properties) = 0;
 };

@@ -19,9 +19,6 @@ class SRPG_KIT_API ABaseWeapon : public ABaseItem, public IWeaponInterface
 	GENERATED_BODY()
 
 protected:
-	TObjectPtr<ACharacter> _characterOwner;
-
-protected:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	FDataTableRowHandle WeaponPropertiesRow;
 
@@ -31,8 +28,6 @@ public:
 	ABaseWeapon();
 
 	virtual void BeginPlay() override;
-
-	virtual void SetOwnerActor(ACharacter *NewOwner) { _characterOwner = NewOwner; }
 
 	UFUNCTION(BlueprintCallable)
 	virtual void GetHandsIK_Transform(const USkeletalMeshComponent *CharacterMesh,
@@ -47,12 +42,6 @@ public:
 		if (_weaponProperties)
 			return _weaponProperties->AimingCameraOffset;
 		return FVector(0, 0, 0);
-	};
-
-	UFUNCTION()
-	ACharacter *GetOwningCharacter_Implementation() const override
-	{
-		return _characterOwner;
 	};
 
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
