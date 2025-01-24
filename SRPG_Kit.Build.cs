@@ -24,7 +24,9 @@ public class SRPG_Kit : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core", "Niagara", "AIModule"
+				"Core", 
+				"AIModule",
+				"Niagara"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -37,6 +39,7 @@ public class SRPG_Kit : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"Niagara"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

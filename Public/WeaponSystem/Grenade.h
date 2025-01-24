@@ -30,7 +30,7 @@ protected:
 
 protected:
     UFUNCTION(BlueprintCallable, Category = Grenade)
-    virtual void Launch();
+    virtual void Launch(FVector Target);
 
     UFUNCTION(BlueprintImplementableEvent, Category = Grenade)
     void ChargeThrow();

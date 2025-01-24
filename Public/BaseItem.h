@@ -29,6 +29,5 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Components")
 	TObjectPtr<USkeletalMeshComponent> Mesh;
-
-protected:
+	
 };

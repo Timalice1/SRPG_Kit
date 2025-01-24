@@ -25,6 +25,9 @@ FVector AGrenade::GetThrowDirection()
 
 FVector AGrenade::CalculateVelocity(FVector target)
 {
+    if (!GetOwner())
+        return FVector();
+
     float _len = (target - GetActorLocation()).Size();
     float _t = _len / MaxVelocity;
 
@@ -58,7 +61,7 @@ void AGrenade::StopAttack_Implementation()
     _bReseted = true;
 }
 
-void AGrenade::Launch()
+void AGrenade::Launch(FVector Target)
 {
     if (!bCanThrow)
         return;
@@ -69,7 +72,7 @@ void AGrenade::Launch()
     {
         _proj->SetOwner(GetOwner());
         _proj->GetMesh()->SetPhysicsLinearVelocity(
-            CalculateVelocity(GetThrowDirection()));
+            CalculateVelocity(Target));
         _proj->GetExplosiveComponent()->Explode(_weaponProperties->BaseDamage, GetOwner());
     }
 }
