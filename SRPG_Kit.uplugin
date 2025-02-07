@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "SRPG_Kit",
+	"Description": "",
+	"Category": "Other",
+	"CreatedBy": "Timalice",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "SRPG_Kit",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
