@@ -12,10 +12,12 @@ class SRPG_KIT_API UFirearmAnimInstance : public UAnimInstance
 public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	virtual void Shoot();
-
 protected:
 	UPROPERTY(EditAnywhere, Category = "FireWeapon|Slider")
 	FVector TargetSlideTranslation = FVector();
 	UPROPERTY(EditAnywhere, Category = "FireWeapon|Slider")
+	float SlideTranslationInterpSpeed = 10.f;
+
+private:
 	float SlideTranslationAlpha = 0.f;
 };

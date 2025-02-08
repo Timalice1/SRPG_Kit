@@ -14,6 +14,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Logging/MessageLog.h"
 #include <Kismet/KismetMathLibrary.h>
+#include "WeaponSystem/Firearm/FirearmAnimInstance.h"
 
 #pragma region FireWeapon
 
@@ -69,6 +70,9 @@ void AFireWeapon::InitComponents()
 
 	if (ShellEject_System != nullptr && ShellEject_System->IsActive())
 		ShellEject_System->Deactivate();
+
+	if (Mesh->GetAnimInstance())
+		_animInstanceRef = Cast<UFirearmAnimInstance>(Mesh->GetAnimInstance());
 }
 
 void AFireWeapon::BindRecoilTimelines()
@@ -222,6 +226,9 @@ void AFireWeapon::Fire()
 	{
 		if (_weaponProperties->MagazineSize != -1)
 			CurrentAmmo = FMath::Max(0, CurrentAmmo - 1);
+
+		if (_animInstanceRef)
+			_animInstanceRef->Shoot();
 
 		Recoil();
 		PlayShootFX();

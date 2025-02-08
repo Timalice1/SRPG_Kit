@@ -41,14 +41,21 @@ protected: // Components
 	UPROPERTY(EditDefaultsOnly, Category = Components)
 	TObjectPtr<class UNiagaraComponent> ShellEject_System;
 
-private:
+	UPROPERTY(EditDefaultsOnly, Category = FireWeapon)
+	TSubclassOf<class AProjectile> Projectile;
+
+private: // References
 	class FMessageLog logger = FMessageLog(FName("PIE"));
 	struct FFireWeaponProperties *_weaponProperties;
+	
+	UPROPERTY()
+	class UFirearmAnimInstance *_animInstanceRef = nullptr;
 
+private: //Default class properties
 	FTimeline RecoilRotation_Timeline;
 	FTimeline RecoilTranslation_Timeline;
 
-	//Shooting properties
+	// Shooting properties
 	bool bReadyToShoot = true;
 	bool bReseted = true;
 	bool isReloading = false;
@@ -56,14 +63,12 @@ private:
 	int32 CurrentAmmo;
 	float _fireRate = 0;
 
-private:	
+private:
 	virtual void BindRecoilTimelines();
 	virtual void InitComponents();
 	virtual void PlaySound(class USoundBase *Sound, FVector Location);
 
 protected: // Fire weapon config
-	UPROPERTY(EditDefaultsOnly, Category = FireWeapon)
-	TSubclassOf<class AProjectile> Projectile;
 	// Debuggind properties
 	UPROPERTY(EditDefaultsOnly, Category = "FireWeapon|WallBlock")
 	bool _bDrawDebug = false;
@@ -85,24 +90,24 @@ private: // Wall blocking
 	virtual void InterpPivotPointTransform(FVector NewTranslation, FRotator NewRotation);
 
 protected: // Weapon interface implementation
-	//Shooting
+	// Shooting
 	void StartAttack_Implementation() override;
 	void StopAttack_Implementation() override;
 
-	//ADS
+	// ADS
 	FVector GetAimPointLocation_Implementation() const override { return AimPoint->GetComponentLocation(); }
 	FRotator GetAimPointRotation_Implementation() const override { return AimPoint->GetComponentRotation(); }
 	bool CanADS_Implementation() const override;
 	float GetADS_TurnRate_Implementation() const override;
 
-	//Wall blocking
+	// Wall blocking
 	virtual bool IsBlocked_Implementation() const override { return bBlocked; }
 
 	void GetHandsIK_Transform(const USkeletalMeshComponent *CharacterMesh,
 							  FTransform &RightHandTransform,
 							  FTransform &LeftHandTransform) const override;
 
-	//Reloading
+	// Reloading
 	void ReloadStart_Implementation() override;
 	void ReloadEnd_Implementation(bool IsInterrupted) override;
 	bool CanBeReloaded_Implementation() const override;
@@ -164,7 +169,7 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void Init(float ReboundProbability, float DamageAmount, float HitImpulse);
-	virtual class UProjectileMovementComponent* GetProjectileMovement();
+	virtual class UProjectileMovementComponent *GetProjectileMovement();
 
 	UFUNCTION()
 	void HitEvent(UPrimitiveComponent *HitComponent,
