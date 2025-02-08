@@ -19,7 +19,6 @@
 
 AFireWeapon::AFireWeapon()
 {
-
 	AimPoint = CreateDefaultSubobject<USceneComponent>("AimPoint");
 	AimPoint->SetRelativeRotation(Mesh->GetRelativeRotation());
 	AimPoint->SetupAttachment(RootPoint);
@@ -44,8 +43,6 @@ AFireWeapon::AFireWeapon()
 
 	ShellEject_System = CreateDefaultSubobject<UNiagaraComponent>("ShellejectSystem");
 	ShellEject_System->SetupAttachment(Mesh);
-
-	USceneComponent* _tmp = CreateDefaultSubobject<USceneComponent>("TMP");
 }
 
 void AFireWeapon::BeginPlay()
