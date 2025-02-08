@@ -404,6 +404,12 @@ UAnimMontage *AFireWeapon::GetReloadMontage_Implementation()
 	return _weaponProperties->Reload_Montage;
 }
 
+void AFireWeapon::GetAimPointTransform_Implementation(FVector &OutLocation, FRotator &OutRotation) const
+{
+	OutLocation = AimPoint->GetComponentLocation();
+	OutRotation = AimPoint->GetComponentRotation();
+}
+
 #pragma endregion FireWeapon
 
 #pragma region Projectile

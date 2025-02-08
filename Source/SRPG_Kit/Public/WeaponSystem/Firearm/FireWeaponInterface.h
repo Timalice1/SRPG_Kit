@@ -27,10 +27,7 @@ public:
 	float GetADS_TurnRate() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeapon|ADS")
-	FVector GetAimPointLocation() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeapon|ADS")
-	FRotator GetAimPointRotation() const;
+	void GetAimPointTransform(FVector &OutLocation, FRotator &OutRotation) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeapon|Reloading")
 	bool CanBeReloaded() const;

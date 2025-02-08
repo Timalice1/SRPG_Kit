@@ -95,8 +95,7 @@ protected: // Weapon interface implementation
 	void StopAttack_Implementation() override;
 
 	// ADS
-	FVector GetAimPointLocation_Implementation() const override { return AimPoint->GetComponentLocation(); }
-	FRotator GetAimPointRotation_Implementation() const override { return AimPoint->GetComponentRotation(); }
+	void GetAimPointTransform_Implementation(FVector &OutLocation, FRotator &OutRotation) const override;
 	bool CanADS_Implementation() const override;
 	float GetADS_TurnRate_Implementation() const override;
 
