@@ -13,7 +13,7 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	virtual void Shoot();
 protected:
-	UPROPERTY(EditAnywhere, Category = "FireWeapon|Slider")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FireWeapon|Slider")
 	FVector TargetSlideTranslation = FVector();
 	UPROPERTY(EditAnywhere, Category = "FireWeapon|Slider")
 	float SlideTranslationInterpSpeed = 10.f;
