@@ -36,14 +36,17 @@ AFireWeapon::AFireWeapon()
 	WallBlockPivot->SetupAttachment(RootPoint);
 	Mesh->SetupAttachment(WallBlockPivot);
 
-	Muzzle = CreateDefaultSubobject<USceneComponent>("MuzzleComponent");
+	InitAttachments();
+}
+
+void AFireWeapon::InitAttachments()
+{
+	Scope = CreateDefaultSubobject<UStaticMeshComponent>("ScopeMeshComponent");
+	Scope->SetupAttachment(Mesh);
+	Muzzle = CreateDefaultSubobject<UStaticMeshComponent>("MuzzleMeshComponent");
 	Muzzle->SetupAttachment(Mesh);
-
-	MuzzleFlash = CreateDefaultSubobject<UParticleSystemComponent>("MuzzleFlash");
-	MuzzleFlash->SetupAttachment(Muzzle);
-
-	ShellEject_System = CreateDefaultSubobject<UNiagaraComponent>("ShellejectSystem");
-	ShellEject_System->SetupAttachment(Mesh);
+	Magazine = CreateDefaultSubobject<UStaticMeshComponent>("MagazineMeshComponent");
+	Magazine->SetupAttachment(Mesh);
 }
 
 void AFireWeapon::BeginPlay()
@@ -65,12 +68,6 @@ void AFireWeapon::BeginPlay()
 
 void AFireWeapon::InitComponents()
 {
-	if (MuzzleFlash != nullptr && MuzzleFlash->IsActive())
-		MuzzleFlash->Deactivate();
-
-	if (ShellEject_System != nullptr && ShellEject_System->IsActive())
-		ShellEject_System->Deactivate();
-
 	if (Mesh->GetAnimInstance())
 		_animInstanceRef = Cast<UFirearmAnimInstance>(Mesh->GetAnimInstance());
 }
@@ -222,24 +219,17 @@ void AFireWeapon::Fire()
 		return;
 	}
 
-	if (SpawnProjectile())
-	{
-		if (_weaponProperties->MagazineSize != -1)
-			CurrentAmmo = FMath::Max(0, CurrentAmmo - 1);
+	if (!SpawnProjectile())
+		return;
 
-		if (_animInstanceRef)
-			_animInstanceRef->Shoot();
+	if (_weaponProperties->MagazineSize != -1)
+		CurrentAmmo = FMath::Max(0, CurrentAmmo - 1);
 
-		Recoil();
-		PlayShootFX();
-		UAISense_Hearing::ReportNoiseEvent(
-			GetWorld(),
-			GetActorLocation(),
-			1,
-			this,
-			_weaponProperties->NoiseRange,
-			TEXT("Shooting"));
-	}
+	if (_animInstanceRef)
+		_animInstanceRef->Shoot();
+
+	Recoil();
+	PlayShootFX();
 
 	bReseted = _weaponProperties->bAllowAutoFire;
 }
@@ -250,8 +240,10 @@ bool AFireWeapon::SpawnProjectile()
 		return false;
 
 	// Define projectile spawn location
-	FVector muzzleLocation = Muzzle->GetComponentLocation();
-	FRotator muzzleRotation = Muzzle->GetComponentRotation();
+
+	FTransform _muzzleTransform = Mesh->GetSocketTransform("Muzzle");
+	FVector muzzleLocation = _muzzleTransform.GetTranslation();
+	FRotator muzzleRotation = _muzzleTransform.Rotator();
 
 	for (int i = 0; i < _weaponProperties->PelletsPerShoot; i++)
 	{
@@ -292,13 +284,6 @@ bool AFireWeapon::SpawnProjectile()
 
 void AFireWeapon::PlayShootFX()
 {
-	/*Activate muzzle flash component*/
-	if (MuzzleFlash != nullptr)
-		MuzzleFlash->Activate(true);
-
-	if (ShellEject_System != nullptr)
-		ShellEject_System->Activate(true);
-
 	this->PlaySound(_weaponProperties->Shoot_Sound, GetActorLocation());
 }
 

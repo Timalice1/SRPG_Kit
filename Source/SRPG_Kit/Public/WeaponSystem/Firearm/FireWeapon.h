@@ -32,26 +32,32 @@ protected: // Components
 	TObjectPtr<class USceneComponent> LeftHand;
 	UPROPERTY(EditDefaultsOnly, Category = Components)
 	TObjectPtr<class USceneComponent> RightHand;
+
 	UPROPERTY(EditDefaultsOnly, Category = Components)
 	TObjectPtr<class USceneComponent> WallBlockPivot;
-	UPROPERTY(EditDefaultsOnly, Category = Components)
-	TObjectPtr<class USceneComponent> Muzzle;
-	UPROPERTY(EditDefaultsOnly, Category = Components)
-	TObjectPtr<class UParticleSystemComponent> MuzzleFlash;
-	UPROPERTY(EditDefaultsOnly, Category = Components)
-	TObjectPtr<class UNiagaraComponent> ShellEject_System;
 
 	UPROPERTY(EditDefaultsOnly, Category = FireWeapon)
 	TSubclassOf<class AProjectile> Projectile;
 
+protected: // Attachments
+	UPROPERTY(BlueprintReadOnly, Category = Components)
+	TObjectPtr<class UStaticMeshComponent> Scope;
+	UPROPERTY(BlueprintReadOnly, Category = Components)
+	TObjectPtr<class UStaticMeshComponent> Muzzle;
+	UPROPERTY(BlueprintReadOnly, Category = Components)
+	TObjectPtr<class UStaticMeshComponent> Magazine;
+
+private:
+	virtual void InitAttachments();
+
 private: // References
 	class FMessageLog logger = FMessageLog(FName("PIE"));
 	struct FFireWeaponProperties *_weaponProperties;
-	
+
 	UPROPERTY()
 	class UFirearmAnimInstance *_animInstanceRef = nullptr;
 
-private: //Default class properties
+private: // Default class properties
 	FTimeline RecoilRotation_Timeline;
 	FTimeline RecoilTranslation_Timeline;
 
