@@ -40,7 +40,8 @@ public class SRPG_Kit : ModuleRules
 				"Slate",
 				"SlateCore",
 				"Niagara",
-				"PhysicsCore"
+				"PhysicsCore",
+				"UMG"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
