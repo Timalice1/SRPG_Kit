@@ -4,6 +4,7 @@
 #include "WeaponSystem/BaseWeapon.h"
 #include "FireWeaponInterface.h"
 #include "Components/TimelineComponent.h"
+#include "../Attachments/AttachmentSlot.h"
 #include "FireWeapon.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FResetShootEvent);
@@ -24,8 +25,6 @@ public:
 	bool bBlocked = false;
 
 protected: // Components
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = Components)
-	TObjectPtr<class USceneComponent> AimPoint;
 	UPROPERTY(EditDefaultsOnly, Category = Components)
 	TObjectPtr<class USceneComponent> BlockPoint;
 	UPROPERTY(EditDefaultsOnly, Category = Components)
@@ -33,22 +32,28 @@ protected: // Components
 	UPROPERTY(EditDefaultsOnly, Category = Components)
 	TObjectPtr<class USceneComponent> RightHand;
 
-	UPROPERTY(EditDefaultsOnly, Category = Components)
-	TObjectPtr<class USceneComponent> WallBlockPivot;
-
 	UPROPERTY(EditDefaultsOnly, Category = FireWeapon)
 	TSubclassOf<class AProjectile> Projectile;
 
-protected: // Attachments
-	UPROPERTY(BlueprintReadOnly, Category = Components)
-	TObjectPtr<class UStaticMeshComponent> Scope;
-	UPROPERTY(BlueprintReadOnly, Category = Components)
-	TObjectPtr<class UStaticMeshComponent> Muzzle;
-	UPROPERTY(BlueprintReadOnly, Category = Components)
-	TObjectPtr<class UStaticMeshComponent> Magazine;
-
 private:
-	virtual void InitAttachments();
+	UPROPERTY()
+	TObjectPtr<class USceneComponent> AimPoint;
+	UPROPERTY()
+	TObjectPtr<class USceneComponent> WallBlockPivot;
+
+protected: // Attachments
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FireWeapon|Attachments")
+	TSet<FAttachmentSlot> attachmentSlots;
+
+	virtual void InitSlots();
+
+	UFUNCTION(BlueprintCallable, Category = "FireWeapon|Attachment")
+	virtual void InstallModule(const FName &SlotName, UStaticMesh *attachment);
+	UFUNCTION(BlueprintCallable, Category = "FireWeapon|Attachment")
+	virtual void RemoveModule(const FName &SlotName);
+
+	UPROPERTY()
+	TArray<FAttachmentSlot> _activeSlots;
 
 private: // References
 	class FMessageLog logger = FMessageLog(FName("PIE"));
@@ -90,6 +95,7 @@ private: // Recoil
 	virtual void RotateMesh();
 	UFUNCTION()
 	virtual void TranslateMesh();
+	virtual void ReduceRecoil();
 
 private: // Wall blocking
 	virtual void CheckBlocking();
