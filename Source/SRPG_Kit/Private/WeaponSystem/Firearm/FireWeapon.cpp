@@ -14,6 +14,8 @@
 #include "Logging/MessageLog.h"
 #include <Kismet/KismetMathLibrary.h>
 #include "WeaponSystem/Firearm/FirearmAnimInstance.h"
+#include "WeaponSystem/Attachments/AttachmentSlot.h"
+#include "WeaponSystem/Attachments/AttachmentsSystemComponent.h"
 
 #pragma region FireWeapon
 
@@ -34,6 +36,8 @@ AFireWeapon::AFireWeapon()
 	WallBlockPivot = CreateDefaultSubobject<USceneComponent>("WallBlockPivotPoint");
 	WallBlockPivot->SetupAttachment(RootPoint);
 	Mesh->SetupAttachment(WallBlockPivot);
+
+	attachmentSystem = CreateDefaultSubobject<UAttachmentSystemComponent>("AttachmentSystemComponent");
 }
 
 void AFireWeapon::BeginPlay()
@@ -50,20 +54,10 @@ void AFireWeapon::BeginPlay()
 
 	InitComponents();
 	BindRecoilTimelines();
-	InitSlots();
 
 	CurrentAmmo = _weaponProperties->MagazineSize;
 	_fireRate = 60 / static_cast<float>(_weaponProperties->RPM);
 	Super::BeginPlay();
-}
-
-void AFireWeapon::InitSlots()
-{
-	for (FAttachmentSlot &slot : attachmentSlots)
-	{
-		if (Mesh->DoesSocketExist(slot.SocketName))
-			_activeSlots.Add(slot);
-	}
 }
 
 void AFireWeapon::InitComponents()
@@ -101,11 +95,11 @@ void AFireWeapon::Tick(float DeltaSeconds)
 	ReduceRecoil();
 	CheckBlocking();
 
-	for (FAttachmentSlot &slot : _activeSlots)
-	{
-		UKismetSystemLibrary::DrawDebugPoint(this,
-											 Mesh->GetSocketLocation(slot.SocketName), 10.f, FLinearColor::Green);
-	}
+	// for (FAttachmentSlot &slot : _activeSlots)
+	// {
+	// 	UKismetSystemLibrary::DrawDebugPoint(this,
+	// 										 Mesh->GetSocketLocation(slot.SocketName), 10.f, FLinearColor::Green);
+	// }
 
 	Super::Tick(DeltaSeconds);
 }
@@ -420,42 +414,6 @@ void AFireWeapon::GetAimPointTransform_Implementation(FVector &OutLocation, FRot
 {
 	OutLocation = AimPoint->GetComponentLocation();
 	OutRotation = AimPoint->GetComponentRotation();
-}
-
-void AFireWeapon::InstallModule(const FName &SlotName, UStaticMesh *attachment)
-{
-	FAttachmentSlot *_targetSlot =
-		_activeSlots.FindByPredicate([SlotName](const FAttachmentSlot &slot)
-									 { return slot.SlotName == SlotName; });
-
-	if (!_targetSlot || !attachment)
-		return; // Exit if slot don't exist or attachment is null
-
-	if (_targetSlot->CurrentModule)
-		RemoveModule(SlotName); // Remove attahcment if already installed
-
-	UStaticMeshComponent *newComp = NewObject<UStaticMeshComponent>(this, UStaticMeshComponent::StaticClass(), SlotName);
-	if (!newComp)
-		return;
-
-	newComp->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetIncludingScale, _targetSlot->SocketName);
-	newComp->SetStaticMesh(attachment);
-	newComp->SetCollisionProfileName("NoCollision");
-	newComp->RegisterComponent();
-
-	_targetSlot->CurrentModule = newComp;
-	GEngine->AddOnScreenDebugMessage(0, 2, FColor::Red, FString::Printf(TEXT("Attachment installed")));
-}
-
-void AFireWeapon::RemoveModule(const FName &SlotName)
-{
-	FAttachmentSlot *_targetSlot =
-		_activeSlots.FindByPredicate([SlotName](const FAttachmentSlot &slot)
-									 { return slot.SlotName == SlotName; });
-	if (!_targetSlot || !_targetSlot->CurrentModule)
-		return;
-	_targetSlot->CurrentModule->DestroyComponent();
-	_targetSlot->CurrentModule = nullptr;
 }
 
 #pragma endregion FireWeapon

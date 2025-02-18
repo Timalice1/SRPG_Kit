@@ -18,9 +18,9 @@ public:
 
 	void Tick(float DeltaSeconds) override;
 
+	USkeletalMeshComponent *GetMesh() { return Mesh; };
+
 protected:
-
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> RootPoint;
 
@@ -29,5 +29,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Components")
 	TObjectPtr<USkeletalMeshComponent> Mesh;
-	
 };

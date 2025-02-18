@@ -4,7 +4,7 @@
 #include "WeaponSystem/BaseWeapon.h"
 #include "FireWeaponInterface.h"
 #include "Components/TimelineComponent.h"
-#include "../Attachments/AttachmentSlot.h"
+#include "WeaponSystem/Attachments/AttachmentSlot.h"
 #include "FireWeapon.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FResetShootEvent);
@@ -32,28 +32,21 @@ protected: // Components
 	UPROPERTY(EditDefaultsOnly, Category = Components)
 	TObjectPtr<class USceneComponent> RightHand;
 
+	UPROPERTY(EditDefaultsOnly, Category = Components)
+	TObjectPtr<class UAttachmentSystemComponent> attachmentSystem;
+
 	UPROPERTY(EditDefaultsOnly, Category = FireWeapon)
 	TSubclassOf<class AProjectile> Projectile;
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "FireWeapon|Attachments")
+	virtual class UAttachmentSystemComponent *GetAttachmentSystem() { return attachmentSystem; }
 
 private:
 	UPROPERTY()
 	TObjectPtr<class USceneComponent> AimPoint;
 	UPROPERTY()
 	TObjectPtr<class USceneComponent> WallBlockPivot;
-
-protected: // Attachments
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FireWeapon|Attachments")
-	TSet<FAttachmentSlot> attachmentSlots;
-
-	virtual void InitSlots();
-
-	UFUNCTION(BlueprintCallable, Category = "FireWeapon|Attachment")
-	virtual void InstallModule(const FName &SlotName, UStaticMesh *attachment);
-	UFUNCTION(BlueprintCallable, Category = "FireWeapon|Attachment")
-	virtual void RemoveModule(const FName &SlotName);
-
-	UPROPERTY()
-	TArray<FAttachmentSlot> _activeSlots;
 
 private: // References
 	class FMessageLog logger = FMessageLog(FName("PIE"));
