@@ -32,7 +32,7 @@ protected: // Components
 	UPROPERTY(EditDefaultsOnly, Category = Components)
 	TObjectPtr<class USceneComponent> RightHand;
 
-	UPROPERTY(EditDefaultsOnly, Category = Components)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
 	TObjectPtr<class UAttachmentSystemComponent> attachmentSystem;
 
 	UPROPERTY(EditDefaultsOnly, Category = FireWeapon)
