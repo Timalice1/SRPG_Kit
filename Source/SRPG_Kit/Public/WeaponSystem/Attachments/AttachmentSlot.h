@@ -9,9 +9,9 @@ struct FAttachmentSlot
     GENERATED_BODY()
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AttachmentSlot)
-    FName SocketName;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AttachmentSlot)
     FName SlotName = FName("AttachmentSlot");
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AttachmentSlot)
+    FName SocketName;
 
     UPROPERTY()
     class UStaticMeshComponent *CurrentModule;
