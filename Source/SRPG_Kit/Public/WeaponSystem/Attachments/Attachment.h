@@ -3,20 +3,26 @@
 #include "CoreMinimal.h"
 #include "Attachment.generated.h"
 
-USTRUCT(BlueprintType)
-struct FAttachmentConfig : public FTableRowBase
+UENUM(BlueprintType)
+enum class EAttachmentModuleType : uint8
 {
-    GENERATED_BODY()
-public:
-    UPROPERTY(EditAnywhere, Category = BaseConfig)
-    TObjectPtr<class UStaticMesh> Mesh;
+    Scope,
+    Optics,
+    Muzzle,
+    Magazine,
+    Mount,
+
+    Count UMETA(Hidden)
 };
 
-UCLASS(MinimalAPI, BlueprintType, Blueprintable)
-class AAttachment : public AActor
+USTRUCT()
+struct FAttachmentModule : public FTableRowBase
 {
     GENERATED_BODY()
 
-public:
-    AAttachment() {};
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = BaseModuleParam)
+    class UStaticMesh *Mesh;
+    
+    // Override base weapon property by attachment modifiers
+    virtual void OverrideWeaponData(struct FFireWeaponProperties &weaponData) {};
 };

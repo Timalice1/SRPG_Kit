@@ -6,9 +6,9 @@
 USTRUCT(BlueprintType)
 struct FFireWeaponProperties : public FBaseWeaponProperties
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
-    UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = FireWeapon,
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = FireWeapon,
 			  meta = (ClampMin = -1))
 	int32 MagazineSize = 30;
 	/*Define bullet pellets per one shoot. 1 by default. Needs for shotguns f.ex.*/
@@ -26,9 +26,9 @@ struct FFireWeaponProperties : public FBaseWeaponProperties
 			  meta = (ClampMin = 0, ClampMax = 1))
 	float ReboundProbability = 0.1f;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = FireWeapon,
-		meta = (ClampMin = 1))
+			  meta = (ClampMin = 1))
 	int32 RPM = 1;
-	
+
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = FireWeapon, meta = (DisplayName = "Bullet Speed (m/s)"))
 	float BulletSpeed = 200.f;
 	UPROPERTY(EditDefaultsOnly, Category = FireWeapon)
@@ -54,9 +54,12 @@ struct FFireWeaponProperties : public FBaseWeaponProperties
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Recoil,
 			  meta = (ClampMin = 0.f))
 	float RecoilPitchMax;
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Recoil,
+			  meta = (ClampMin = 0.f))
+	float ReduceReciolSpeed = 10.f;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Recoil)
 	TSubclassOf<UCameraShakeBase> RecoilCameraShake_Class;
-	
+
 	UPROPERTY(BlueprintReadWrite, Category = Debug)
 	bool bToogleCameraShake = true;
 
@@ -73,7 +76,7 @@ struct FFireWeaponProperties : public FBaseWeaponProperties
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = FireWeapon)
 	FVector FP_CameraOffset = FVector(0, 0, 5.f);
 
-    /*Weapon reload animation for character*/
+	/*Weapon reload animation for character*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Animations)
 	TObjectPtr<UAnimMontage> Reload_Montage;
 

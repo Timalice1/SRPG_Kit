@@ -25,6 +25,7 @@ public class SRPG_Kit : ModuleRules
 			new string[]
 			{
 				"Core", 
+				"CoreUObject",
 				"AIModule",
 				"Niagara"
 				// ... add other public dependencies that you statically link with here ...

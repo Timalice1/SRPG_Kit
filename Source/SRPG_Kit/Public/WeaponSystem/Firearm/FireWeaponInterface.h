@@ -10,6 +10,8 @@ class UFireWeaponInterface : public UInterface
 	GENERATED_BODY()
 };
 
+enum class EWeaponAttachmentTypes : uint8;
+
 class SRPG_KIT_API IFireWeaponInterface
 {
 	GENERATED_BODY()
@@ -39,7 +41,7 @@ public:
 	void ReloadEnd(bool IsInterrupted);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeaponInterface|Reloading")
-	UAnimMontage* GetReloadMontage();
+	UAnimMontage *GetReloadMontage();
 
 	// Property getters
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeapon|WeaponData")
@@ -48,5 +50,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "FireWeapon|WeaponData")
 	float GetCurrentAmmoPercent();
 
-
+	// // Attachments
+	// virtual void InstallAttachment(class UStaticMesh *attachment, struct FAttachmentSlot slot) = 0;
+	// virtual void RemoveAttachment(struct FAttachmentSlot slot) = 0;
 };
